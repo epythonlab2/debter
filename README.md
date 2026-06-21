@@ -17,8 +17,7 @@ The platform replaces traditional paper ledger books with a modern cloud-powered
 
 | Architecture | Splash | Login |
 |-----------|-------|------------|
-| <img src="https://github.com/user-attachments/assets/3f6e57a3-7205-4201-9c7f-6bbae2e3d01a" width="250"/> | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/9651d58b-2c7e-4bdc-b3b6-a18254e563a6" /> |
-<img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/6f1486d7-a24b-4603-8eb6-cfeab88d44cc" /> |
+| <img src="https://github.com/user-attachments/assets/3f6e57a3-7205-4201-9c7f-6bbae2e3d01a" width="250"/> | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/9651d58b-2c7e-4bdc-b3b6-a18254e563a6" /> | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/6f1486d7-a24b-4603-8eb6-cfeab88d44cc" />
 
 | Signup | Analytics | Record Sale |
 |-----------|---------|---------|
