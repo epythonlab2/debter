@@ -22,45 +22,37 @@ The platform replaces traditional paper ledger books with a modern cloud-powered
     <th>Architecture</th>
     <th>Splash</th>
     <th>Login</th>
+    <th>Signup</th>
   </tr>
   <tr>
     <td><img src="https://github.com/user-attachments/assets/f441c531-316f-4341-b58e-516dc7d09dfa" height="320"/></td>
     <td><img src="https://github.com/user-attachments/assets/9651d58b-2c7e-4bdc-b3b6-a18254e563a6" height="320"/></td>
     <td><img src="https://github.com/user-attachments/assets/6f1486d7-a24b-4603-8eb6-cfeab88d44cc" height="320"/></td>
+    <td><img src="https://github.com/user-attachments/assets/32ad1c3e-003b-4b1b-9b4e-40a9bc2b846f" height="320"/></td>
   </tr>
 </table>
 
 ---
 
-### Onboarding & Analytics Flow
+### Analytics & Data Management
 
 <table>
   <tr>
-    <th>Signup</th>
     <th>Analytics</th>
     <th>Record Sale</th>
-  </tr>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/32ad1c3e-003b-4b1b-9b4e-40a9bc2b846f" height="320"/></td>
-    <td><img src="https://github.com/user-attachments/assets/44ee0349-0a30-48a4-b899-3e296b2a46a5" height="320"/></td>
-    <td><img src="https://github.com/user-attachments/assets/b788e791-1c34-4378-bf73-de834b2a34b1" height="320"/></td>
-  </tr>
-</table>
-
----
-
-### Data Management
-
-<table>
-  <tr>
     <th>Sales Ledger</th>
     <th>Inventory</th>
   </tr>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/d5f024e0-2c64-445f-bf68-f587f03cfcdf" height="360"/></td>
+    <td><img src="https://github.com/user-attachments/assets/44ee0349-0a30-48a4-b899-3e296b2a46a5" height="320"/></td>
+    <td><img src="https://github.com/user-attachments/assets/b788e791-1c34-4378-bf73-de834b2a34b1" height="320"/></td>
+     <td><img src="https://github.com/user-attachments/assets/d5f024e0-2c64-445f-bf68-f587f03cfcdf" height="360"/></td>
     <td><img src="https://github.com/user-attachments/assets/dd7b91f3-db91-48f2-a020-88da8ea7267b" height="360"/></td>
   </tr>
 </table>
+
+---
+
 
 ## ✨ Features
 
