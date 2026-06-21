@@ -21,11 +21,16 @@ The platform replaces traditional paper ledger books with a modern cloud-powered
 
 | Signup | Analytics | Record Sale |
 |-----------|---------|---------|
-| <img src="https://github.com/user-attachments/assets/3404684d-acf1-42c6-94b9-603d2ae43cf5" width="250"/> | <img src="https://github.com/user-attachments/assets/db55004f-44ee-4627-8374-3f3da1b047c3" width="250"/> | <img src="https://github.com/user-attachments/assets/f3845135-d4ec-4a29-8638-9c5758923191" width="250"/> |
+| <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/32ad1c3e-003b-4b1b-9b4e-40a9bc2b846f" />
+ | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/44ee0349-0a30-48a4-b899-3e296b2a46a5" />
+ | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/b788e791-1c34-4378-bf73-de834b2a34b1" />
+ |
 
 |Sales Ledger | Inventory |
 |----------|----------------|
-| <img src="https://github.com/user-attachments/assets/80594d0b-46fd-4bc3-a2f9-3ca1da0ab2d3" width="250"/> | <img src="https://github.com/user-attachments/assets/f6b149f5-b507-4b88-82a3-047f64dc4db0" width="250"/> |
+| <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/d5f024e0-2c64-445f-bf68-f587f03cfcdf" />
+ | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/dd7b91f3-db91-48f2-a020-88da8ea7267b" />
+ |
 
 
 ## ✨ Features
