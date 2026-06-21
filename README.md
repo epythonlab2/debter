@@ -15,22 +15,70 @@ The platform replaces traditional paper ledger books with a modern cloud-powered
 ---
 ## 📸 Screenshots
 
-| Architecture | Splash | Login |
-|-----------|-------|------------|
-| <img src="https://github.com/user-attachments/assets/3f6e57a3-7205-4201-9c7f-6bbae2e3d01a" width="250"/> | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/9651d58b-2c7e-4bdc-b3b6-a18254e563a6" /> | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/6f1486d7-a24b-4603-8eb6-cfeab88d44cc" />
+## App UI Overview
 
-| Signup | Analytics | Record Sale |
-|-----------|---------|---------|
-| <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/32ad1c3e-003b-4b1b-9b4e-40a9bc2b846f" />
- | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/44ee0349-0a30-48a4-b899-3e296b2a46a5" />
- | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/b788e791-1c34-4378-bf73-de834b2a34b1" />
- |
+### Core Screens
 
-|Sales Ledger | Inventory |
-|----------|----------------|
-| <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/d5f024e0-2c64-445f-bf68-f587f03cfcdf" />
- | <img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/dd7b91f3-db91-48f2-a020-88da8ea7267b" />
- |
+<table>
+  <tr>
+    <th>Architecture</th>
+    <th>Splash</th>
+    <th>Login</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/f441c531-316f-4341-b58e-516dc7d09dfa" width="220"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/9651d58b-2c7e-4bdc-b3b6-a18254e563a6" width="220"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/6f1486d7-a24b-4603-8eb6-cfeab88d44cc" width="220"/>
+    </td>
+  </tr>
+</table>
+
+---
+
+### Onboarding & Analytics Flow
+
+<table>
+  <tr>
+    <th>Signup</th>
+    <th>Analytics</th>
+    <th>Record Sale</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/32ad1c3e-003b-4b1b-9b4e-40a9bc2b846f" width="220"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/44ee0349-0a30-48a4-b899-3e296b2a46a5" width="220"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/b788e791-1c34-4378-bf73-de834b2a34b1" width="220"/>
+    </td>
+  </tr>
+</table>
+
+---
+
+### Data Management
+
+<table>
+  <tr>
+    <th>Sales Ledger</th>
+    <th>Inventory</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/d5f024e0-2c64-445f-bf68-f587f03cfcdf" width="300"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/dd7b91f3-db91-48f2-a020-88da8ea7267b" width="300"/>
+    </td>
+  </tr>
+</table>
 
 
 ## ✨ Features
