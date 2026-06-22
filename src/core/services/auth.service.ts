@@ -5,7 +5,7 @@ import { UserProfile } from '../../types';
 /**
  * Registers a new business by creating a shop row and then an owner user profile
  */
-export async function registerUser(profile: any) { // Switched to any temporarily to allow dual-case parsing safety
+export async function registerUser(profile: any) { 
   let assignedShopId: string | null = null;
 
   // 1. If a business name is provided, create the shop entity first
@@ -19,8 +19,8 @@ export async function registerUser(profile: any) { // Switched to any temporaril
         {
           id: generatedShopId,
           name: cleanBusinessName,
-          location: profile.location || null, // Safely stored inside the shops table
-          owner_id: null // Kept null initially; will back-fill below once user is created
+          location: profile.location || null, 
+          owner_id: null 
         }
       ]);
 
@@ -28,14 +28,14 @@ export async function registerUser(profile: any) { // Switched to any temporaril
     assignedShopId = generatedShopId;
   }
 
-  // 🟢 CASE NORMALIZATION GATES: Resolves frontend property model divergence
+  // 🟢 CASE NORMALIZATION GATES
   const resolvedFullName = profile.fullName || profile.full_name || '';
   const resolvedBusinessName = profile.businessName || profile.business_name || null;
   const resolvedCreatedBy = profile.createdBy || profile.created_by || null;
 
-  // 🛑 CRITICAL CLIENT GUARD: Intercept blank records before database roundtrip execution
+  // 🛑 CRITICAL CLIENT GUARD
   if (!resolvedFullName.trim()) {
-    throw new Error('Registration Rejected: Full Name property missing or blank in processing payload.');
+    throw new Error('Registration Rejected: Full Name property missing or blank.');
   }
 
   // 2. Register the user profile, linking it to the created shop
@@ -45,12 +45,12 @@ export async function registerUser(profile: any) { // Switched to any temporaril
       {
         id: profile.id || `usr-${Date.now()}`,
         identifier: profile.identifier,
-        full_name: resolvedFullName.trim(),       // 🎯 SAFE: Guaranteed non-null clean string
+        full_name: resolvedFullName.trim(),       
         email: profile.email || null,
         password: profile.password,
         role: profile.role || 'owner',
-        shop_id: assignedShopId || profile.shop_id || null, // Link to the fresh shop entity
-        business_name: resolvedBusinessName,       // Audit trail snapshot
+        shop_id: assignedShopId || profile.shop_id || null, 
+        business_name: resolvedBusinessName,       
         approved: profile.approved !== undefined ? profile.approved : false,
         created_by: resolvedCreatedBy
       }
@@ -58,7 +58,7 @@ export async function registerUser(profile: any) { // Switched to any temporaril
 
   if (userError) throw userError;
 
-  // 3. Back-fill owner tracking onto the shops table to link the circular relationship
+  // 3. Back-fill owner tracking onto the shops table
   if (assignedShopId && profile.id) {
     await supabase
       .from('shops')
@@ -70,9 +70,14 @@ export async function registerUser(profile: any) { // Switched to any temporaril
 }
 
 /**
- * Authenticates credentials against the users table and resolves shop details relatonally
+ * Authenticates credentials against the users table and resolves shop details relationally.
+ * Accepts localization context parameters to respond with formal native messaging layers.
  */
-export async function loginUser(identifier: string, password: string): Promise<UserProfile> {
+export async function loginUser(
+  identifier: string, 
+  password: string, 
+  lang: 'en' | 'am' = 'en'
+): Promise<UserProfile> {
   // 1. Fetch core user info
   const { data: user, error: userError } = await supabase
     .from('users')
@@ -81,8 +86,20 @@ export async function loginUser(identifier: string, password: string): Promise<U
     .eq('password', password)
     .maybeSingle();
 
+  // 🛑 INVALID CREDENTIALS GATES
   if (userError || !user) {
-    throw new Error('Invalid credentials provided.');
+    const invalidMsg = lang === 'am'
+      ? 'ያስገቡት መለያ ወይም የይለፍ ቃል የተሳሳተ ነው። እባክዎ እንደገና ይሞክሩ።'
+      : 'Invalid identifier or password provided. Please check your credentials and try again.';
+    throw new Error(invalidMsg);
+  }
+
+  // 🛑 ACCOUNT DEACTIVATION / APPROVAL GUARD
+  if (user.approved === false) {
+    const restrictedMsg = lang === 'am'
+      ? 'የመለያዎ መብት ተገድቧል ወይም አልነቃም። እባክዎ መለያዎን ለማስነሳት በቴሌግራም ያግኙን፡ https://t.me/debter16'
+      : 'Your account access has been restricted or deactivated. Please contact us on Telegram for immediate activation: https://t.me/debter16';
+    throw new Error(restrictedMsg);
   }
 
   let resolvedLocation: string | null = null;
@@ -100,18 +117,19 @@ export async function loginUser(identifier: string, password: string): Promise<U
     }
   }
 
-  // 🛡️ Normalization Layer: Convert database types into unified frontend camelCase properties
+  // 🛡️ Normalization Layer
   return {
     id: user.id,
     identifier: user.identifier,
-    full_name: user.full_name,                // 🎯 NEW: Maps camelCase field to front-end state
+    full_name: user.full_name,                
     email: user.email,
     password: user.password,
     role: user.role,
     shop_id: user.shop_id,
     businessName: user.business_name || null, 
-    location: resolvedLocation,              // 🎯 Resolved relationally from the shops table lookup
+    location: resolvedLocation,              
     approved: user.approved,
-    createdBy: user.created_by || null        
+    createdBy: user.created_by || null,
+    must_change_password: !!user.must_change_password       
   };
 }

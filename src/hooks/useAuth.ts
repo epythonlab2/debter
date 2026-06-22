@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { registerUser, loginUser } from '../core/services/auth.service';
 import { UserProfile } from '../types';
-// Import your supabase client instance here if you intend to use it:
 import { supabase } from '../utils/supabaseClient'; 
 
 interface Props {
@@ -27,7 +26,7 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
 
-  // --- PASSWORD UPDATE STATES (FIXED: Added missing states) ---
+  // --- PASSWORD UPDATE STATES ---
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changePasswordError, setChangePasswordError] = useState('');
@@ -90,25 +89,27 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
           shop_id: '',  
           businessName: businessName.trim(), 
           location: location.trim(),         
-          approved: false, 
+          approved: true, 
           createdBy: undefined 
         };
 
         // Persist multi-table structural data down to database layer
         await registerUser(newUser);
 
-        setSuccessMsg('Registration submitted! Awaiting administrator approval.');
-
-        // Trap pending state configuration profile inside client session storage
-        localStorage.setItem('debter_v1_current_user', JSON.stringify(newUser));
+        // Define localized feedback depending on language routing context
+        const message = lang === 'am' 
+          ? 'ምዝገባው ተጠናቋል። እባክዎ ለመግባት የይለፍ ቃልዎን ያስገቡ።' 
+          : 'Registration successful! Please login with your password.';
+          
+        setSuccessMsg(message);
         
-        resetFormFields();
-        onAuthSuccess(newUser);
+        // 🛠️ FIXED: Removed resetFormFields() and setIsRegistering(false) from here.
+        // This lets Auth.tsx intercept the success flow and hold the screen.
 
       } else {
         // --- AUTHENTICATION LOGIN ENGINE ---
-        const data = await loginUser(identifier.trim(), password);
-
+        const data = await loginUser(identifier.trim(), password, lang);
+        
         const user: UserProfile = {
           id: data.id,
           identifier: data.identifier,
@@ -123,12 +124,10 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
           must_change_password: !!data.must_change_password
         };
 
-        // If user must change password, toggle the state indicator
         if (user.must_change_password) {
           setMustChangePassword(true);
         }
 
-        // Cache authentic profile parameters
         localStorage.setItem('debter_v1_current_user', JSON.stringify(user));
         onAuthSuccess(user);
       }
@@ -149,7 +148,6 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
    */
   const verifyUserExists = async (inputIdentifier: string): Promise<boolean> => {
     if (!inputIdentifier || inputIdentifier.trim() === '') {
-      console.log("[AuthEngine] Rejecting verification: Identifier is empty.");
       return false;
     }
     const cleanId = inputIdentifier.trim();
@@ -172,7 +170,6 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
       console.error("[AuthEngine] Uncaught exception during database lookup:", dbError);
     }
 
-    // Fallback Check
     try {
       const mockDbUser = localStorage.getItem('debter_v1_current_user');
       if (mockDbUser) {
@@ -191,55 +188,50 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
     return false; 
   };
 
- // Inside src/hooks/useAuth.ts -> handleChangePasswordSubmit
-const handleChangePasswordSubmit = async (e: React.FormEvent, t?:any) => {
-  e.preventDefault(); 
-  setChangePasswordError('');
-  // Make sure to clear any lingering success messages at the start of a new attempt
-  if (setSuccessMsg) setSuccessMsg(''); 
+  const handleChangePasswordSubmit = async (e: React.FormEvent, t?:any) => {
+    e.preventDefault(); 
+    setChangePasswordError('');
+    if (setSuccessMsg) setSuccessMsg(''); 
 
-  if (!newPassword || !confirmPassword) {
-    setChangePasswordError('Please fill in all password fields.');
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    setChangePasswordError('Passwords do not match.');
-    return;
-  }
-
-  setChangePasswordLoading(true);
-  try {
-    const client = typeof supabase !== 'undefined' ? supabase : (window as any).supabase;
-    if (!client) throw new Error("Database client unavailable.");
-
-    // Update your users table matching the current identifier
-    const { error } = await client
-      .from('users')
-      .update({ 
-        password: newPassword, 
-        must_change_password: false 
-      })
-      .eq('identifier', identifier.trim()); // Matches phone or email string
-
-    if (error) throw error;
-    
-    // Close the modal state and clear sensitive field variables
-    setMustChangePassword(false);
-    resetFormFields();
-
-    // Set the state success message instead of a breaking browser alert
-    if (setSuccessMsg) {
-      setSuccessMsg(t?.successAlert);
+    if (!newPassword || !confirmPassword) {
+      setChangePasswordError('Please fill in all password fields.');
+      return;
     }
-  } catch (err: any) {
-    setChangePasswordError(err.message || 'Failed to update password.');
-  } finally {
-    setChangePasswordLoading(false);
-  }
-};
 
- return {
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Passwords do not match.');
+      return;
+    }
+
+    setChangePasswordLoading(true);
+    try {
+      const client = typeof supabase !== 'undefined' ? supabase : (window as any).supabase;
+      if (!client) throw new Error("Database client unavailable.");
+
+      const { error } = await client
+        .from('users')
+        .update({ 
+          password: newPassword, 
+          must_change_password: false 
+        })
+        .eq('identifier', identifier.trim());
+
+      if (error) throw error;
+      
+      setMustChangePassword(false);
+      resetFormFields();
+
+      if (setSuccessMsg) {
+        setSuccessMsg(t?.successAlert);
+      }
+    } catch (err: any) {
+      setChangePasswordError(err.message || 'Failed to update password.');
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
+
+  return {
     state: {
       isRegistering,
       identifier,
@@ -265,13 +257,13 @@ const handleChangePasswordSubmit = async (e: React.FormEvent, t?:any) => {
       setEmail,
       setBusinessName,
       setLocation, 
-      // 🔥 FIXED: Added these state setters so Auth.tsx can safely call them
       setNewPassword,
       setConfirmPassword,
       setMustChangePassword,
       setChangePasswordError,
       handleSubmit,
       verifyUserExists,
+      resetFormFields, // Exposed so Auth.tsx can clear input structures cleanly on toggle redirect
       updatePassword: handleChangePasswordSubmit
     }
   };

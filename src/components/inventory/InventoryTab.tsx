@@ -1,6 +1,6 @@
 // src/components/InventoryTab.tsx
-import React from 'react';
-import { PlusCircle, Search, Trash2, Edit3, Layers, X, SlidersHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { PlusCircle, Search, Trash2, Edit3, Layers, X, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { 
   ItemRecord, 
   InventoryTabProps, 
@@ -14,8 +14,6 @@ import {
  * ============================================================================
  * MAIN COMPONENT: InventoryTab
  * ============================================================================
- * Handles the view layout for managing shop items, inventory stock, row sizes,
- * and passes upstream callback handles directly down into modular sub-components.
  */
 export default function InventoryTab({ 
   itemName, setItemName, 
@@ -35,14 +33,6 @@ export default function InventoryTab({
   items
 }: InventoryTabProps) {
 
-  /**
-   * 🟢 Action Handlers: State Preparation Pipelines
-   * --------------------------------------------------------------------------
-   * Clears out any stale context fields and safely primes the target pointers
-   * to guarantee the modal initializes cleanly in either 'create' or 'edit' modes.
-   */
-
-  // Opens modal prepared to ingest a brand new unique product entry
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedItemId('');
@@ -52,7 +42,6 @@ export default function InventoryTab({
     setIsModalOpen(true);
   };
 
-  // Pre-populates all string states to shift modal into updating records
   const handleOpenEdit = (item: ItemRecord) => {
     setModalMode('edit');
     setSelectedItemId(item.id);
@@ -65,16 +54,8 @@ export default function InventoryTab({
   return (
     <div className="space-y-4 px-0.5">
       
-      {/* ======================================================================
-        SECTION 1: Upper Control Hub Header Panel
-        ======================================================================
-        Houses local live-text search fields, pagination/row limitation 
-        dropdown selectors, and the main initialization triggers.
-      */}
       <div className="flex flex-col gap-3 justify-between bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        
         <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2.5">
-          {/* Live Inventory Text Search Bar */}
           <div className="relative flex-1 group">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors stroke-[2.5]" />
             <input 
@@ -84,7 +65,6 @@ export default function InventoryTab({
               placeholder={t.searchInventory}
               className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 outline-none text-sm bg-slate-50 focus:bg-white focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all font-medium placeholder:text-slate-400"
             />
-            {/* Actionable search reset field element */}
             {inventorySearch.length > 0 && (
               <button
                 type="button"
@@ -96,7 +76,6 @@ export default function InventoryTab({
             )}
           </div>
 
-          {/* Page Limit Selection Filter (5, 10, 20, 50 rows) */}
           <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 transition-all focus-within:bg-white focus-within:border-[#1a5fb4] focus-within:ring-4 focus-within:ring-[#1a5fb4]/10">
             <SlidersHorizontal className="w-4 h-4 text-slate-400 mr-2 shrink-0 stroke-[2]" />
             <select
@@ -112,7 +91,6 @@ export default function InventoryTab({
           </div>
         </div>
         
-        {/* Trigger to initiate a product creation cycle */}
         <button 
           onClick={handleOpenCreate}
           className="flex items-center justify-center gap-2 bg-[#1a5fb4] hover:bg-[#154b91] active:scale-[0.97] text-white font-black px-4 py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
@@ -122,10 +100,6 @@ export default function InventoryTab({
         </button>
       </div>
 
-      {/* ======================================================================
-        SECTION 2: Data Display Matrix Frame
-        ======================================================================
-      */}
       <InventoryList 
         items={scopedItems} 
         onEdit={handleOpenEdit}
@@ -133,10 +107,6 @@ export default function InventoryTab({
         t={t} 
       />
 
-      {/* ======================================================================
-        SECTION 3: Single Dynamic Shared Action Form Modal
-        ======================================================================
-      */}
       {isModalOpen && (
         <InventoryModal  
           onSubmit={(e: React.FormEvent) => handleRegisterItem(e, selectedItemId || null)}
@@ -158,20 +128,40 @@ export default function InventoryTab({
 
 /**
  * ============================================================================
- * SUB-COMPONENT: InventoryModal
+ * SUB-COMPONENT: InventoryModal (With double-click submission lock)
  * ============================================================================
  */
 const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalItems }: InventoryModalProps) => {
+  // 🛠️ Local asynchronous submission block gate
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const cleanTypingName = values.itemName.trim().toLowerCase();
   const duplicateMatch = globalItems.find((i: ItemRecord) => i.item_name.toLowerCase() === cleanTypingName);
-  
   const isDuplicateRegister = mode === 'create' && duplicateMatch;
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return; // Immediate lock injection
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(e);
+    } catch (err) {
+      console.error("Item processing rejected:", err);
+      setIsSubmitting(false); // Only loosen restriction if upstream callback throws an error
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in">
       <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4 relative animate-scale-up max-h-[90vh] overflow-y-auto">
         
-        <button type="button" onClick={onClose} className="absolute right-4 top-4 p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+        <button 
+          type="button" 
+          onClick={onClose} 
+          disabled={isSubmitting}
+          className="absolute right-4 top-4 p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-50"
+        >
           <X className="w-4 h-4 stroke-[2.5]" />
         </button>
 
@@ -182,7 +172,7 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
           </h3>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="space-y-3.5">
             <div>
               <InputField 
@@ -190,6 +180,7 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
                 value={values.itemName} 
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setters.setItemName(e.target.value)} 
                 placeholder={t.itemNamePlaceholder || "Item Name"} 
+                disabled={isSubmitting}
               />
               {isDuplicateRegister && duplicateMatch && (
                 <div className="mt-2 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium animate-fade-in leading-relaxed">
@@ -207,6 +198,7 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
                 type="number" 
                 min="0" 
                 inputMode="decimal"
+                disabled={isSubmitting}
               />
               <InputField 
                 label={t.quantity} 
@@ -216,24 +208,34 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
                 type="number" 
                 min="0" 
                 inputMode="numeric"
+                disabled={isSubmitting}
               />
             </div>
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-3 rounded-xl text-xs transition-all uppercase tracking-wider">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={isSubmitting}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-3 rounded-xl text-xs transition-all uppercase tracking-wider disabled:opacity-50"
+            >
               {t.cancelBtn}
             </button>
             <button 
               type="submit" 
-              className={`flex-1 font-black py-3 rounded-xl text-xs active:scale-[0.97] transition-all text-white uppercase tracking-wider bg-[#1a5fb4] hover:bg-[#154b91]`}
+              disabled={isSubmitting}
+              className="flex-1 font-black py-3 rounded-xl text-xs active:scale-[0.97] transition-all text-white uppercase tracking-wider bg-[#1a5fb4] hover:bg-[#154b91] disabled:bg-slate-400 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
-              {mode === 'edit' 
-                ? (t.saveChange || "Save Changes") 
-                : isDuplicateRegister 
-                  ? (t.mergeUpdate || "Merge Stock") 
-                  : t.registerItem
-              }
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+              ) : mode === 'edit' ? (
+                t.saveChange || "Save Changes"
+              ) : isDuplicateRegister ? (
+                t.mergeUpdate || "Merge Stock"
+              ) : (
+                t.registerItem
+              )}
             </button>
           </div>
         </form>
@@ -248,7 +250,7 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
  * SUB-COMPONENT: InputField
  * ============================================================================
  */
-const InputField = ({ label, value, onChange, placeholder, type = "text", min, inputMode }: InputFieldProps) => (
+const InputField = ({ label, value, onChange, placeholder, type = "text", min, inputMode, disabled }: InputFieldProps & { disabled?: boolean }) => (
   <div className="space-y-1">
     <label className="block text-slate-500 font-bold text-xs">{label}</label>
     <input 
@@ -258,7 +260,8 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", min, i
       placeholder={placeholder} 
       min={min} 
       inputMode={inputMode}
-      className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-medium transition-all" 
+      disabled={disabled}
+      className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-medium transition-all disabled:opacity-60" 
       required 
     />
   </div>

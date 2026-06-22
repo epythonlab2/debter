@@ -227,14 +227,24 @@ export const translations = {
     confirmChangeBtn: 'Confirm Change',
     cancelReturn: 'Cancel and Return',
     placeholderPassword: '••••••••••••',
-    errorIdEmpty: 'Please fill in your Phone Number or Email address first.',
-    errorAccessDenied: 'Access Denied: Please ask for help on Telegram @debter16',
-    errorValidationFailed: 'User validation failed. Please check network connections.',
+    errorAccessDenied: 'Password change denied. Please contact support via Telegram https://t.me/debter16',
     errorPasswordLength: 'Password must be at least 6 characters long.',
     errorPasswordMismatch: 'Passwords do not match.',
     successAlert: 'Password updated successfully! Please log in with your new credentials.',
     changePasswordLink: "Change Password?",
     resetPassword: "Reset Password",
+    
+    // Client-Side Validation Error Messages
+    errorInvalidPhone: 'Please enter a valid phone number (09xxxxxxxx / +251xxxxxxxx).',
+    errorInvalidName: 'Please enter your first and last name. Numbers or special characters are not allowed.',
+    errorInvalidBusiness: 'Shop or business name must be at least 2 characters long.',
+    errorInvalidLocation: 'Please enter a valid shop address or location.',
+    errorInvalidEmail: 'Please enter a valid email address or leave it blank.',
+    errorPasswordShort: 'Password must be at least 4 characters long.',
+    errorIdEmpty: 'Please enter your phone number first.',
+    // Server/System Validations
+    errorValidationFailed: 'Verification failed. Please check your internet connection.',
+    regSuccess: "Registration Successfully",
   },
   
   am: {
@@ -464,14 +474,23 @@ export const translations = {
     confirmChangeBtn: 'ለውጡን አረጋግጥ',
     cancelReturn: 'ሰርዝ እና ተመለስ',
     placeholderPassword: '••••••••••••',
-    errorIdEmpty: 'እባክዎ መጀመሪያ ስልክ ቁጥር ያስገቡ።',
-    errorAccessDenied: 'ፍቃድ ተከልክሏል፦ እባክዎ በቴሌግራም ያግኙን https://t.me/debter16',
-    errorValidationFailed: 'ማረጋገጥ አልተሳካም። እባክዎ የኔትወርክ ግንኙነትዎን ያረጋግጡ።',
+    errorAccessDenied: 'የይለፍ ቃል መቀየር አይችሉም። እባክዎ በቴሌግራም ያነጋግሩን https://t.me/debter16',
     errorPasswordLength: 'የይለፍ ቃል ቢያንስ 4 ቁምፊዎች መሆን አለበት።',
     errorPasswordMismatch: 'ያስገቡት የይለፍ ቃል አይዛመድም።',
     ownersuccessAlert: 'የይለፍ ቃልዎ በትክክል ተቀይሯል! እባክዎ በአዲሱ ይለፍ ቃል ይግቡ።',
     changePasswordLink: 'የይለፍ ቃል ለመቀየር?',
-    resetPassword: 'የይለፍ ቃል መቀየር'
+    resetPassword: 'የይለፍ ቃል መቀየር',
+    // Client-Side Validation Error Messages
+    errorInvalidPhone: 'እባክዎ ትክክለኛ የስልክ ቁጥር (09xxxxxxxx / +251xxxxxxxx) ያስገቡ።',
+    errorInvalidName: 'እባክዎ የመጀመሪያ እና የአባት ስምዎን ያስገቡ። ቁጥሮች ወይም ልዩ ምልክቶች አይፈቀዱም።',
+    errorInvalidBusiness: 'የሱቅ ወይም የንግድ ስም ቢያንስ 2 ፊደላት መሆን አለበት።',
+    errorInvalidLocation: 'እባክዎ የሱቁን መገኛ ወይም አድራሻ በትክክል ያስገቡ።',
+    errorInvalidEmail: 'እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ ወይም ክፍት ይተውት።',
+    errorPasswordShort: 'የይለፍ ቃል ቢያንስ 4 ፊደላት/ቁጥሮች መሆን አለበት።',
+    errorIdEmpty: 'እባክዎ በመጀመሪያ የስልክ ቁጥርዎን ያስገቡ።',
+    // Server/System Validations
+    errorValidationFailed: 'ማረጋገጥ አልተቻለም። እባክዎ የኢንተርኔት ግንኙነትዎን ያረጋግጡ።',
+    regSuccess: "ምዝገባው ተሳክቷል!",
 
   }
 };
