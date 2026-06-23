@@ -349,8 +349,8 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
             </div>
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-black text-white tracking-tight uppercase truncate">{t?.appName || 'Debter'}</h2>
-            <p className="text-[9px] font-mono font-bold text-slate-500 tracking-widest uppercase">{getViewModeText()}</p>
+            <h2 className="text-base font-black text-white tracking-tight truncate">{t?.appName || 'Debter'}</h2>
+            <p className="text-[9px] font-mono font-bold text-slate-500 tracking-widest">{getViewModeText()}</p>
           </div>
         </div>
 
@@ -367,7 +367,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                   lang === 'am' ? 'translate-x-[38px]' : 'translate-x-0'
                 }`}
               />
-              <div className="absolute inset-0 flex items-center justify-between px-2.5 text-[8.5px] font-mono font-black tracking-tighter uppercase select-none pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-between px-2.5 text-[8.5px] font-mono font-black tracking-tighter select-none pointer-events-none">
                 <span className={`transition-colors duration-200 ${lang === 'en' ? 'text-white font-black' : 'text-slate-500 font-medium'}`}>EN</span>
                 <span className={`transition-colors duration-200 ${lang === 'am' ? 'text-white font-black' : 'text-slate-500 font-medium'}`}>አማ</span>
               </div>
@@ -413,7 +413,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
             <form onSubmit={handleUpdatePasswordSubmit} className="space-y-3.5">
               {/* ... New Password Inputs unchanged ... */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">
                   {t?.newPasswordLabel || 'New Password'}
                 </label>
                 <div className="relative group">
@@ -437,7 +437,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">
                   {t?.confirmPasswordLabel || 'Confirm Password'}
                 </label>
                 <div className="relative group">
@@ -460,7 +460,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                 </div>
               </div>
 
-              <button type="submit" disabled={changePasswordLoading} className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50 mt-4 shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center cursor-pointer">
+              <button type="submit" disabled={changePasswordLoading} className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-3.5 px-4 rounded-xl text-xs tracking-widest disabled:opacity-50 mt-4 shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center cursor-pointer">
                 {changePasswordLoading ? (
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 ) : (
@@ -503,7 +503,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                   <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                     <CheckCircle2 className="w-6 h-6 text-emerald-400 stroke-[2]" />
                   </div>
-                  <h3 className="text-sm font-bold text-white tracking-wide uppercase">
+                  <h3 className="text-sm font-bold text-white tracking-wide">
                     {t?.regSuccess}
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed font-medium">
@@ -517,7 +517,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                     clearAllLocalErrors();
                     setIsRegistering(false);
                   }}
-                  className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-4 px-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center gap-2 cursor-pointer relative z-30 transition-all duration-200 group"
+                  className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-4 px-4 rounded-xl text-xs tracking-widest shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center gap-2 cursor-pointer relative z-30 transition-all duration-200 group"
                 >
                   <LogIn className="w-4 h-4 text-white stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
                   {t?.login || 'Login Now'}
@@ -529,7 +529,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                   <div className="space-y-4 border-b border-slate-900 pb-5 mb-5 animate-fade-in">
                     {/* FULL NAME */}
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{t?.fullNameLabel || 'Full Name'}</label>
+                      <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t?.fullNameLabel || 'Full Name'}</label>
                       <div className="relative group">
                         <Contact className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-[#1a5fb4] transition-colors" />
                         <input 
@@ -549,7 +549,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
 
                     {/* BUSINESS NAME */}
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{t?.businessName || 'Business Name'}</label>
+                      <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t?.businessName || 'Business Name'}</label>
                       <div className="relative group">
                         <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-[#1a5fb4] transition-colors" />
                         <input 
@@ -569,7 +569,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
 
                     {/* LOCATION */}
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{t?.location || 'Location'}</label>
+                      <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t?.location || 'Location'}</label>
                       <div className="relative group">
                         <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-[#1a5fb4] transition-colors" />
                         <input 
@@ -591,7 +591,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
 
                 {/* IDENTIFIER */}
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{t?.phoneOrEmail || 'Phone Number or Email'}</label>
+                  <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t?.phoneOrEmail || 'Phone Number or Email'}</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-[#1a5fb4] transition-colors" />
                     <input 
@@ -621,7 +621,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                 {/* OPTIONAL EMAIL */}
                 {isRegistering && (
                   <div className="space-y-2 animate-fade-in">
-                    <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Email (Optional)</label>
+                    <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t.ownerEmail}</label>
                     <div className="relative group">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-[#1a5fb4] transition-colors" />
                       <input 
@@ -642,7 +642,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                 {/* PASSWORD */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">{t?.password || 'Password'}</label>
+                    <label className="block text-[10px] font-mono font-bold tracking-widest text-slate-400">{t?.password || 'Password'}</label>
                     {!isRegistering && (
                       <button
                         type="button" 
@@ -680,7 +680,7 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
                   )}
                 </div>
 
-                <button type="submit" disabled={loading || checkingPhone} className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-4 px-4 rounded-xl text-xs uppercase tracking-widest mt-8 shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center cursor-pointer relative z-30 pointer-events-auto disabled:opacity-50">
+                <button type="submit" disabled={loading || checkingPhone} className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 text-white font-mono font-bold py-4 px-4 rounded-xl text-xs tracking-widest mt-8 shadow-[0_4px_20px_rgba(26,95,180,0.25)] flex items-center justify-center cursor-pointer relative z-30 pointer-events-auto disabled:opacity-50">
                   {loading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <span className="flex items-center gap-2"><TrendingUp className="w-4 h-4 text-white stroke-[2.5]" />{isRegistering ? (t?.signup || 'Sign Up') : (t?.login || 'Login')}</span>}
                 </button>
               </form>
@@ -692,15 +692,15 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
       {/* FOOTER */}
       <div className="w-full max-w-md mx-auto text-center pt-4 relative z-20 border-t border-slate-900 flex-shrink-0">
         {mustChangePassword ? (
-          <button type="button" onClick={() => setMustChangePassword(false)} className="text-slate-500 hover:text-white text-xs font-bold tracking-wide uppercase transition-colors cursor-pointer relative z-30 pointer-events-auto">
+          <button type="button" onClick={() => setMustChangePassword(false)} className="text-slate-500 hover:text-white text-xs font-bold tracking-wide transition-colors cursor-pointer relative z-30 pointer-events-auto">
             {t?.cancelReturn || 'Cancel and Return'}
           </button>
         ) : registrationComplete ? (
-          <span className="text-[10px] font-mono text-slate-500 tracking-wider uppercase">
+          <span className="text-[10px] font-mono text-slate-500 tracking-wider">
             {lang === 'am' ? 'የደብተር መለያዎ ተፈጥሯል' : 'Account Created Successfully'}
           </span>
         ) : (
-          <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-slate-500 hover:text-white text-xs font-bold tracking-wide uppercase transition-colors pointer-events-auto cursor-pointer relative z-30">{isRegistering ? (t?.hasAccount || 'Already have an account? Login') : (t?.noAccount || "Don't have an account? Register")}</button>
+          <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-slate-500 hover:text-white text-xs font-bold tracking-wide transition-colors pointer-events-auto cursor-pointer relative z-30">{isRegistering ? (t?.hasAccount || 'Already have an account? Login') : (t?.noAccount || "Don't have an account? Register")}</button>
         )}
       </div>
     </div>

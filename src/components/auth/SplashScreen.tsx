@@ -10,7 +10,7 @@ interface SplashScreenProps {
 }
 
 /**
- * Modern High-Contrast Splash Screen (Bilingual Localized Edition)
+ * Modern Splash Screen (Bilingual Localized Edition)
  * Configured with an extended runtime duration for complete data hydration safety.
  */
 export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: SplashScreenProps) {
@@ -49,7 +49,7 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-between p-12 z-50 select-none overflow-hidden">
+    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-between p-12 z-50 select-none overflow-hidden font-sans">
       
       {/* Decorative Branding Background Graphic using brand hex #1a5fb4 */}
       <div 
@@ -59,13 +59,9 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
       <div className="absolute -left-24 -bottom-24 w-96 h-96 bg-slate-900/40 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Spacer info bar */}
-      <div className="w-full flex justify-between items-center opacity-30 z-10">
-        <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
-          SYS_INIT_OK
-        </span>
-        <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
-          v1.0.0
-        </span>
+      <div className="w-full flex justify-between items-center opacity-30 z-10 text-xs font-mono tracking-widest text-slate-400 ">
+        <span>SYS_INIT_OK</span>
+        <span>v1.0.0</span>
       </div>
 
       {/* CENTER ENGINE: Branding, Core Logo, and Identity Title */}
@@ -78,22 +74,22 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
         </div>
 
         <div className="space-y-3">
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">
+          <h1 className="text-3xl font-semibold text-white tracking-tight ">
             Debter-ደብተር
           </h1>
           
           {isFirstTime ? (
             <div className="space-y-1.5 max-w-sm mx-auto">
-              <p className="text-xs font-extrabold text-slate-200 tracking-wide uppercase leading-relaxed">
+              <p className="text-xs font-semibold text-slate-200 tracking-wide  leading-relaxed">
                 Shop Daily Notebook
               </p>
               <div className="w-6 h-[1px] bg-slate-800 mx-auto" />
-              <p className="text-xs font-medium text-slate-400 tracking-normal leading-relaxed">
+              <p className="text-xs font-normal text-slate-400 tracking-normal leading-relaxed">
                 የዕለት ሽያጭ መመዝገቢያ ደብተር
               </p>
             </div>
           ) : (
-            <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs font-semibold text-slate-400 tracking-widest  max-w-xs mx-auto leading-relaxed">
               {lang === 'en' 
                 ? "Shop Daily Notebook" 
                 : "የዕለት ሽያጭ መመዝገቢያ ደብተር"}
@@ -104,14 +100,14 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
 
       {/* BOTTOM RUNTIME: Tracking Indicator and System Progress */}
       <div className="w-full max-w-xs space-y-4 relative z-10">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide">
+        <div className="flex items-center justify-between text-xs font-semibold  tracking-wide">
           <div className="flex items-center gap-2 text-slate-300">
             <Loader2 className="w-3.5 h-3.5 text-[#1a5fb4] animate-spin flex-shrink-0" />
-            <span className={isFirstTime ? "text-[10px] tracking-normal normal-case font-semibold text-slate-400" : "text-slate-400"}>
+            <span className={isFirstTime ? "tracking-normal normal-case text-slate-400 font-medium" : "text-slate-400"}>
               {getLoadingText()}
             </span>
           </div>
-          <span className="text-[#1a5fb4] tabular-nums font-mono font-bold">
+          <span className="text-[#1a5fb4] tabular-nums font-mono">
             {progress}%
           </span>
         </div>

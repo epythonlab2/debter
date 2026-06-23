@@ -87,7 +87,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
               key={filterOpt}
               type="button"
               onClick={() => setFilterType(filterOpt)}
-              className={`flex-1 text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 text-center py-2.5 text-xs font-bold tracking-wider rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
                 isActive 
                   ? "text-white shadow-sm font-extrabold scale-[1.01]" 
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
@@ -106,7 +106,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
 
       {/* SECTION: TELEMETRY CONTROL OVERVIEW UTILITIES PANEL */}
       <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-xs space-y-4">
-        <label className="block text-xs font-bold uppercase tracking-widest text-slate-400">
+        <label className="block text-xs font-bold tracking-widest text-slate-400">
           {t.feedbackSearchScope || "Telemetry Filter Engine"}
         </label>
         
@@ -146,7 +146,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
                 <div className="flex items-start gap-2.5">
                   <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <h4 className="text-[11px] font-bold uppercase text-rose-600 tracking-wider">Unread Inbound Packets</h4>
+                    <h4 className="text-[11px] font-bold text-rose-600 tracking-wider">Unread Inbound Packets</h4>
                     <p className="text-xs text-slate-500 leading-normal font-medium">
                       There are {unreadCount} new feedback submissions ready to be parsed in the cluster queue layout.
                     </p>
@@ -190,7 +190,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
                     </span>
                     
                     <span 
-                      className="px-2.5 py-1 rounded-lg bg-blue-50/60 font-extrabold text-[11px] uppercase tracking-wider"
+                      className="px-2.5 py-1 rounded-lg bg-blue-50/60 font-extrabold text-[11px] tracking-wider"
                       style={{ color: '#1a5fb4' }}
                     >
                       {log.role || 'user'}
@@ -203,7 +203,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
                     )}
 
                     {isSpamming && !log.isArchived && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 rounded-lg text-[10px] font-bold uppercase tracking-wider select-none">
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 rounded-lg text-[10px] font-bold tracking-wider select-none">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> {t.repeatLog} ({log.submissionCount}x)
                       </span>
                     )}
@@ -224,7 +224,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
                     <button
                       type="button"
                       onClick={() => archiveFeedback(log.feedbackId)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border border-emerald-100 hover:border-emerald-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border border-emerald-100 hover:border-emerald-200 rounded-xl text-xs font-bold tracking-wider transition-all cursor-pointer shadow-xs active:scale-95"
                       title={t.markAsResolvedArchive}
                     >
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -241,7 +241,7 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
         {hasMore && (
           <div 
             ref={observerTargetRef} 
-            className="flex py-6 justify-center items-center w-full text-slate-400 text-xs gap-2.5 font-bold uppercase tracking-widest border border-dashed border-slate-200 rounded-3xl bg-slate-50/40"
+            className="flex py-6 justify-center items-center w-full text-slate-400 text-xs gap-2.5 font-bold tracking-widest border border-dashed border-slate-200 rounded-3xl bg-slate-50/40"
           >
             <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: '#1a5fb4' }} />
             Syncing additional records...

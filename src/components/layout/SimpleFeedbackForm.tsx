@@ -56,11 +56,11 @@ export function SimpleFeedbackForm({ isOpen, onClose, currentUser, t, onSubmit }
         
         <div className="flex justify-between items-start mb-6 shrink-0">
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2 uppercase tracking-tight">
+            <h3 className="text-base font-black text-white flex items-center gap-2 tracking-tight">
               <MessageSquare className="w-4 h-4 text-[#1a5fb4]" />
               {t.feedbackTitle}
             </h3>
-            <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-slate-500 mt-1 tracking-widest">
               {t.feedbackSubtitle}
             </p>
           </div>
@@ -106,14 +106,14 @@ export function SimpleFeedbackForm({ isOpen, onClose, currentUser, t, onSubmit }
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-3 rounded-xl border border-slate-800 text-xs font-bold text-slate-400 hover:bg-slate-800 active:scale-95 transition-all cursor-pointer uppercase tracking-widest"
+                  className="flex-1 py-3 rounded-xl border border-slate-800 text-xs font-bold text-slate-400 hover:bg-slate-800 active:scale-95 transition-all cursor-pointer tracking-widest"
                 >
                   {t.feedbackBtnCancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !comment.trim()}
-                  className="flex-1 py-3 rounded-xl bg-[#1a5fb4] text-white text-xs font-bold hover:bg-[#154b8f] disabled:opacity-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-widest"
+                  className="flex-1 py-3 rounded-xl bg-[#1a5fb4] text-white text-xs font-bold hover:bg-[#154b8f] disabled:opacity-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest"
                 >
                   {isSubmitting ? t.feedbackBtnSending : (
                     <>

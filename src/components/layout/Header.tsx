@@ -12,45 +12,46 @@ interface HeaderProps {
 }
 
 /**
- * Modern Editorial Glassmorphic Header Component
- * Enhanced with immersive deep-contrast aesthetics and brand-aligned active states.
+ * Polished High-Contrast Minimalist Header Component
+ * Optimized for scannability, vertical centering, and clean optical weight.
  */
 export function Header({ lang, setLang, currentUser, handleLogout, t }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 px-4 py-3 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-      <div className="max-w-md mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-40 px-4 py-3 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60 shadow-lg">
+      <div className="max-w-md mx-auto flex items-center justify-between gap-4">
         
-        {/* GRID LAYOUT CONSTRAINT: Shields DebterIcon from layout compression */}
-        <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-          <div className="flex-shrink-0 group relative">
+        {/* LEFT BRAND SECTION */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 relative group">
+            {/* Smooth gentle ambient hover ring around icon */}
             <div className="absolute inset-0 bg-[#1a5fb4]/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+            <div className="relative bg-slate-900 p-2 rounded-xl border border-slate-800 transition-colors group-hover:border-slate-700">
               <DebterIcon size="sm" className="relative z-10" />
             </div>
           </div>
           
-          <div className="min-w-0 flex flex-col justify-center">
-            <h1 className="font-black text-sm md:text-base tracking-tight text-white leading-tight uppercase truncate">
+          <div className="min-w-0 flex flex-col">
+            <h1 className="font-extrabold text-sm md:text-base tracking-wide text-white truncate">
               {t.appName}
             </h1>
-            <p className="text-[8px] text-slate-500 font-mono font-bold uppercase tracking-widest leading-none mt-0.5 select-none">
+            <p className="text-[8px] text-slate-500 font-mono font-bold tracking-widest leading-none mt-0.5 select-none">
               {t.tagline}
             </p>
           </div>
         </div>
 
-        {/* Action Controls Rack */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        {/* RIGHT CONTROLS SECTION */}
+        <div className="flex items-center gap-3 flex-shrink-0">
           
-          {/* Elegant Dark Segmented Language Switcher */}
-          <div className="bg-slate-900/80 p-0.5 rounded-lg flex items-center border border-slate-800/80 backdrop-blur-md relative z-10">
+          {/* Segmented Language Switcher */}
+          <div className="bg-slate-900 p-0.5 rounded-lg flex items-center border border-slate-800">
             <button
               type="button"
               onClick={() => setLang('en')}
-              className={`px-2.5 py-1 text-[9px] font-mono font-bold rounded-md transition-all duration-200 ease-out cursor-pointer ${
+              className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded-md transition-all duration-150 cursor-pointer ${
                 lang === 'en'
-                  ? "bg-[#1a5fb4] text-white shadow-[0_2px_6px_rgba(26,95,180,0.4)]"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#1a5fb4] text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               EN
@@ -58,10 +59,10 @@ export function Header({ lang, setLang, currentUser, handleLogout, t }: HeaderPr
             <button
               type="button"
               onClick={() => setLang('am')}
-              className={`px-2.5 py-1 text-[9px] font-sans font-bold rounded-md transition-all duration-200 ease-out cursor-pointer ${
+              className={`px-2.5 py-1 text-[10px] font-sans font-bold rounded-md transition-all duration-150 cursor-pointer ${
                 lang === 'am'
-                  ? "bg-[#1a5fb4] text-white shadow-[0_2px_6px_rgba(26,95,180,0.4)]"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#1a5fb4] text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               አማ
@@ -70,17 +71,17 @@ export function Header({ lang, setLang, currentUser, handleLogout, t }: HeaderPr
           
           {currentUser && (
             <>
-              {/* Soft vertical visual barrier rule */}
-              <div className="w-[1px] h-3.5 bg-slate-900 self-center" />
+              {/* Subtle visual separator line */}
+              <div className="w-[1px] h-4 bg-slate-800 self-center" />
               
-              {/* Elegant floating circular logout interaction trigger */}
+              {/* Logout button */}
               <button 
                 type="button"
                 onClick={handleLogout} 
-                className="group p-1.5 rounded-lg border border-slate-900 hover:border-rose-950/60 text-slate-500 hover:text-rose-400 bg-slate-900/40 hover:bg-rose-950/20 transition-all active:scale-95 cursor-pointer" 
+                className="group p-2 rounded-lg border border-slate-800 hover:border-rose-900/50 text-slate-400 hover:text-rose-400 bg-slate-900 hover:bg-rose-950/30 transition-all active:scale-95 cursor-pointer" 
                 title={t.logout || "Log Out"}
               >
-                <LogOut className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 duration-200" />
+                <LogOut className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 duration-150" />
               </button>
             </>
           )}

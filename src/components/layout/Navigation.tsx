@@ -74,7 +74,7 @@ export function Navigation({
         className="pointer-events-auto bg-slate-950 text-white hover:bg-slate-900 h-11 px-3.5 rounded-full shadow-xl border border-slate-800 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer group mr-1"
       >
         <MessageSquare className="w-4 h-4 text-[#1a5fb4] stroke-[2.5]" />
-        <span className={`text-[11px] font-black tracking-wider uppercase transition-all duration-300 overflow-hidden whitespace-nowrap ${
+        <span className={`text-[11px] font-black tracking-wider transition-all duration-300 overflow-hidden whitespace-nowrap ${
           isFeedbackExpanded ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100'
         }`}>
           {t.feedback || 'Feedback'}

@@ -1,6 +1,6 @@
 // src/components/InventoryTab.tsx
 import React, { useState } from 'react';
-import { PlusCircle, Search, Trash2, Edit3, Layers, X, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { PlusCircle, Search, Trash2, Edit3, Layers, X, SlidersHorizontal, Loader2, AlertTriangle } from 'lucide-react';
 import { 
   ItemRecord, 
   InventoryTabProps, 
@@ -52,18 +52,18 @@ export default function InventoryTab({
   };
 
   return (
-    <div className="space-y-4 px-0.5">
+    <div className="space-y-4 px-0.5 font-sans">
       
       <div className="flex flex-col gap-3 justify-between bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2.5">
           <div className="relative flex-1 group">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors stroke-[2.5]" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors stroke-[2]" />
             <input 
               type="text" 
               value={inventorySearch}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInventorySearch(e.target.value)}
               placeholder={t.searchInventory}
-              className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 outline-none text-sm bg-slate-50 focus:bg-white focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all font-medium placeholder:text-slate-400"
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm bg-slate-50 focus:bg-white focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all font-normal placeholder:text-slate-400"
             />
             {inventorySearch.length > 0 && (
               <button
@@ -71,7 +71,7 @@ export default function InventoryTab({
                 onClick={() => setInventorySearch('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
               >
-                <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                <X className="w-3.5 h-3.5 stroke-[2]" />
               </button>
             )}
           </div>
@@ -81,7 +81,7 @@ export default function InventoryTab({
             <select
               value={pageSize}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPageSize(Number(e.target.value))}
-              className="bg-transparent border-none text-sm py-3 pr-7 pl-0 font-bold text-slate-600 outline-none cursor-pointer appearance-none w-full"
+              className="bg-transparent border-none text-sm py-2.5 pr-7 pl-0 font-semibold text-slate-600 outline-none cursor-pointer appearance-none w-full"
             >
               <option value={5}>5 {t.rows || "Rows"}</option>
               <option value={10}>10 {t.rows || "Rows"}</option>
@@ -93,9 +93,9 @@ export default function InventoryTab({
         
         <button 
           onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 bg-[#1a5fb4] hover:bg-[#154b91] active:scale-[0.97] text-white font-black px-4 py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-[#1a5fb4] hover:bg-[#154b91] active:scale-[0.97] text-white font-medium px-4 py-2.5 rounded-xl text-xs tracking-wide transition-all shadow-xs cursor-pointer"
         >
-          <PlusCircle className="w-4 h-4 shrink-0 stroke-[2.5]" />
+          <PlusCircle className="w-4 h-4 shrink-0 stroke-[2]" />
           <span>{t.addInventoryItem}</span>
         </button>
       </div>
@@ -128,11 +128,10 @@ export default function InventoryTab({
 
 /**
  * ============================================================================
- * SUB-COMPONENT: InventoryModal (With double-click submission lock)
+ * SUB-COMPONENT: InventoryModal
  * ============================================================================
  */
 const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalItems }: InventoryModalProps) => {
-  // 🛠️ Local asynchronous submission block gate
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cleanTypingName = values.itemName.trim().toLowerCase();
@@ -141,14 +140,14 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return; // Immediate lock injection
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
       await onSubmit(e);
     } catch (err) {
       console.error("Item processing rejected:", err);
-      setIsSubmitting(false); // Only loosen restriction if upstream callback throws an error
+      setIsSubmitting(false);
     }
   };
 
@@ -162,13 +161,13 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
           disabled={isSubmitting}
           className="absolute right-4 top-4 p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-50"
         >
-          <X className="w-4 h-4 stroke-[2.5]" />
+          <X className="w-4 h-4 stroke-[2]" />
         </button>
 
         <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <PlusCircle className="w-5 h-5 text-[#1a5fb4] shrink-0 stroke-[2.5]" />
-          <h3 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">
-            {mode === 'edit' ? (t.modifyItem || "Modify Item") : t.addInventoryItem}
+          <PlusCircle className="w-4 h-4 text-[#1a5fb4] shrink-0 stroke-[2]" />
+          <h3 className="font-semibold text-sm text-slate-800">
+            {mode === 'edit' ? (t.modifyItem || "Modify item details") : (t.addInventoryItem || "Add new item")}
           </h3>
         </div>
 
@@ -183,8 +182,11 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
                 disabled={isSubmitting}
               />
               {isDuplicateRegister && duplicateMatch && (
-                <div className="mt-2 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium animate-fade-in leading-relaxed">
-                  ⚠️ <strong>{duplicateMatch.item_name}</strong> {t.alreadyExist}. {t.addExistingStock || "Submitting will aggregate stock counts together"} ({duplicateMatch.quantity ?? 0} {t.pcs}).
+                <div className="mt-2 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-normal flex items-start gap-1.5 animate-fade-in leading-relaxed">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5 stroke-[2]" />
+                  <div>
+                    <strong className="font-semibold">{duplicateMatch.item_name}</strong> {t.alreadyExist}. {t.addExistingStock || "Submitting will aggregate stock counts together"} ({duplicateMatch.quantity ?? 0} {t.pcs}).
+                  </div>
                 </div>
               )}
             </div>
@@ -218,17 +220,17 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
               type="button" 
               onClick={onClose} 
               disabled={isSubmitting}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-3 rounded-xl text-xs transition-all uppercase tracking-wider disabled:opacity-50"
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-xs transition-all tracking-wide disabled:opacity-50"
             >
               {t.cancelBtn}
             </button>
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="flex-1 font-black py-3 rounded-xl text-xs active:scale-[0.97] transition-all text-white uppercase tracking-wider bg-[#1a5fb4] hover:bg-[#154b91] disabled:bg-slate-400 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 font-medium py-2.5 rounded-xl text-xs active:scale-[0.97] transition-all text-white tracking-wide bg-[#1a5fb4] hover:bg-[#154b91] disabled:bg-slate-400 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin stroke-[2]" />
               ) : mode === 'edit' ? (
                 t.saveChange || "Save Changes"
               ) : isDuplicateRegister ? (
@@ -252,7 +254,7 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
  */
 const InputField = ({ label, value, onChange, placeholder, type = "text", min, inputMode, disabled }: InputFieldProps & { disabled?: boolean }) => (
   <div className="space-y-1">
-    <label className="block text-slate-500 font-bold text-xs">{label}</label>
+    <label className="block text-slate-500 font-medium text-xs">{label}</label>
     <input 
       type={type} 
       value={value} 
@@ -261,7 +263,7 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", min, i
       min={min} 
       inputMode={inputMode}
       disabled={disabled}
-      className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-medium transition-all disabled:opacity-60" 
+      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-normal transition-all disabled:opacity-60" 
       required 
     />
   </div>
@@ -270,25 +272,25 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", min, i
 
 /**
  * ============================================================================
- * SUB-COMPONENT: InventoryList (Memoized)
+ * SUB-COMPONENT: InventoryList
  * ============================================================================
  */
 const InventoryList = React.memo(({ items, onEdit, onDelete, t }: InventoryListProps) => (
   <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
     {items.length === 0 ? (
-      <p className="text-center text-slate-400 text-sm py-12 font-medium">{t.noSalesGeneric}</p>
+      <p className="text-center text-slate-400 text-sm py-12 font-normal">{t.noSalesGeneric}</p>
     ) : (
       <div className="w-full overflow-x-auto max-h-[calc(100vh-240px)] overflow-y-auto">
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
-            <tr className="text-slate-500 text-xs uppercase tracking-wider font-extrabold">
-              <th className="py-3.5 px-4">{t.itemName}</th>
-              <th className="py-3.5 px-4 text-center">{t.stock}</th>
-              <th className="py-3.5 px-4 text-right">{t.priceEtb}</th>
-              <th className="py-3.5 px-4 text-center w-28">{t.actions || "Actions"}</th>
+            <tr className="text-slate-400 text-xs font-semibold tracking-wide">
+              <th className="py-3 px-4">{t.itemName}</th>
+              <th className="py-3 px-4 text-center">{t.stock}</th>
+              <th className="py-3 px-4 text-right">{t.priceEtb}</th>
+              <th className="py-3 px-4 text-center w-28">{t.actions || "Actions"}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-sm font-medium">
+          <tbody className="divide-y divide-slate-100 text-sm font-normal">
             {items.map((item: ItemRecord) => (
               <InventoryRow key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} t={t} />
             ))}
@@ -318,36 +320,36 @@ const InventoryRow = ({ item, onEdit, onDelete, t }: InventoryRowProps) => {
 
   return (
     <tr className="hover:bg-slate-50/70 transition-colors group">
-      <td className="py-4 px-4 font-bold text-slate-800 text-xs sm:text-sm">{item.item_name}</td>
+      <td className="py-3.5 px-4 font-semibold text-slate-800 text-xs sm:text-sm">{item.item_name}</td>
       
-      <td className="py-4 px-4 text-center whitespace-nowrap">
-        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${badgeColorClass}`}>
-          <Layers className="w-3.5 h-3.5 shrink-0" />
-          {stockCount} {t.pcs} {stockCount === 0 && `(${t.outOfStock || 'Empty'})`}
+      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full border ${badgeColorClass}`}>
+          <Layers className="w-3 h-3 shrink-0 stroke-[2]" />
+          <span>{stockCount} {t.pcs} {stockCount === 0 && `(${t.outOfStock || 'Empty'})`}</span>
         </span>
       </td>
       
-      <td className="py-4 px-4 text-right font-black text-[#1a5fb4] font-mono whitespace-nowrap">
-        {Number(item.default_price).toLocaleString()} <span className="text-xs font-bold text-slate-400 font-sans">{t.currency}</span>
+      <td className="py-3.5 px-4 text-right font-semibold text-[#1a5fb4] font-mono whitespace-nowrap">
+        {Number(item.default_price).toLocaleString()} <span className="text-xs font-normal text-slate-400 font-sans">{t.currency}</span>
       </td>
       
-      <td className="py-4 px-4 text-center whitespace-nowrap">
-        <div className="flex items-center justify-center gap-2">
+      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+        <div className="flex items-center justify-center gap-1.5">
           <button 
             type="button"
             onClick={() => onEdit(item)} 
-            className="p-2 rounded-xl text-slate-400 hover:text-[#1a5fb4] hover:bg-[#1a5fb4]/5 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-[#1a5fb4] hover:bg-[#1a5fb4]/5 transition-all cursor-pointer"
             title={t.edit}
           >
-            <Edit3 className="w-4 h-4" />
+            <Edit3 className="w-3.5 h-3.5" />
           </button>
           <button 
             type="button"
             onClick={() => onDelete('item', item.id)} 
-            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
             title={t.deleteBtn}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </td>
