@@ -41,7 +41,10 @@ export default function Owners({ users, handleApproveOwner, handleChangePassword
 
   return (
     // MAIN CONTAINER: Unified soft-minimal layout wrapper with structural padding variants
-    <div className="bg-white rounded-3xl border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-4 animate-in fade-in duration-200">
+    <div 
+      className="bg-white rounded-3xl border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-4 animate-in fade-in duration-200 antialiased"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* SECTION 3: EMPTY STATE
           Fallback interface when filtered arrays match no active records */}
@@ -99,7 +102,7 @@ export default function Owners({ users, handleApproveOwner, handleChangePassword
                       <p className="text-sm font-bold text-slate-800 leading-tight truncate">
                         {owner.business_name || owner.businessName || t.noBusinessName || 'Unnamed Business'}
                       </p>
-                      <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 bg-slate-100/80 text-slate-500 rounded-md shrink-0">
+                      <span className="inline-block text-[9px] font-extrabold tracking-wider px-1.5 py-0.5 bg-slate-100/80 text-slate-500 rounded-md shrink-0">
                         {owner.role}
                       </span>
                     </div>
@@ -145,7 +148,7 @@ export default function Owners({ users, handleApproveOwner, handleChangePassword
                     type="button"
                     data-approved={owner.approved}
                     onClick={() => onActionClick(owner.id, !owner.approved)}
-                    className="min-w-[100px] sm:min-w-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer border shadow-3xs shrink-0 whitespace-nowrap bg-emerald-500 text-white border-transparent hover:bg-emerald-600 hover:shadow-sm data-[approved=true]:bg-white data-[approved=true]:text-rose-600 data-[approved=true]:border-rose-200/60 data-[approved=true]:hover:bg-rose-50/50 data-[approved=true]:hover:border-rose-200"
+                    className="min-w-[100px] sm:min-w-0 px-4 py-2 rounded-xl text-xs font-bold tracking-wider flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer border shadow-3xs shrink-0 whitespace-nowrap bg-emerald-500 text-white border-transparent hover:bg-emerald-600 hover:shadow-sm data-[approved=true]:bg-white data-[approved=true]:text-rose-600 data-[approved=true]:border-rose-200/60 data-[approved=true]:hover:bg-rose-50/50 data-[approved=true]:hover:border-rose-200"
                   >
                     {owner.approved ? (
                       <>

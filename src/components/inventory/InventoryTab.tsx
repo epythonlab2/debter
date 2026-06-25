@@ -52,36 +52,39 @@ export default function InventoryTab({
   };
 
   return (
-    <div className="space-y-4 px-0.5 font-sans">
-      
-      <div className="flex flex-col gap-3 justify-between bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div 
+      className="space-y-3.5 px-0.5"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
+      {/* Search & Actions Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-3xs gap-3">
         <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2.5">
           <div className="relative flex-1 group">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors stroke-[2]" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors duration-200 stroke-[2]" />
             <input 
               type="text" 
               value={inventorySearch}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInventorySearch(e.target.value)}
               placeholder={t.searchInventory}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm bg-slate-50 focus:bg-white focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all font-normal placeholder:text-slate-400"
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm bg-slate-50 focus:bg-white focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all duration-200 font-normal placeholder:text-slate-400"
             />
             {inventorySearch.length > 0 && (
               <button
                 type="button"
                 onClick={() => setInventorySearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5 stroke-[2]" />
               </button>
             )}
           </div>
 
-          <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 transition-all focus-within:bg-white focus-within:border-[#1a5fb4] focus-within:ring-4 focus-within:ring-[#1a5fb4]/10">
+          <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 transition-all duration-200 focus-within:bg-white focus-within:border-[#1a5fb4] focus-within:ring-4 focus-within:ring-[#1a5fb4]/10">
             <SlidersHorizontal className="w-4 h-4 text-slate-400 mr-2 shrink-0 stroke-[2]" />
             <select
               value={pageSize}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPageSize(Number(e.target.value))}
-              className="bg-transparent border-none text-sm py-2.5 pr-7 pl-0 font-semibold text-slate-600 outline-none cursor-pointer appearance-none w-full"
+              className="bg-transparent border-none text-sm py-2.5 pr-7 pl-0 font-medium text-slate-600 outline-none cursor-pointer appearance-none w-full"
             >
               <option value={5}>5 {t.rows || "Rows"}</option>
               <option value={10}>10 {t.rows || "Rows"}</option>
@@ -93,13 +96,14 @@ export default function InventoryTab({
         
         <button 
           onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 bg-[#1a5fb4] hover:bg-[#154b91] active:scale-[0.97] text-white font-medium px-4 py-2.5 rounded-xl text-xs tracking-wide transition-all shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-[#1a5fb4] hover:bg-[#154b91] active:scale-[0.98] text-white font-medium px-4 py-2.5 rounded-xl text-xs tracking-wide transition-all duration-200 shadow-3xs cursor-pointer md:h-10 shrink-0"
         >
           <PlusCircle className="w-4 h-4 shrink-0 stroke-[2]" />
           <span>{t.addInventoryItem}</span>
         </button>
       </div>
 
+      {/* Main Inventory Layout */}
       <InventoryList 
         items={scopedItems} 
         onEdit={handleOpenEdit}
@@ -107,6 +111,7 @@ export default function InventoryTab({
         t={t} 
       />
 
+      {/* Contextual Action Modal Overlays */}
       {isModalOpen && (
         <InventoryModal  
           onSubmit={(e: React.FormEvent) => handleRegisterItem(e, selectedItemId || null)}
@@ -124,7 +129,6 @@ export default function InventoryTab({
     </div>
   );
 }
-
 
 /**
  * ============================================================================
@@ -152,14 +156,14 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4 relative animate-scale-up max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs transition-opacity duration-200">
+      <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4 relative max-h-[90vh] overflow-y-auto scale-100 transition-all duration-200">
         
         <button 
           type="button" 
           onClick={onClose} 
           disabled={isSubmitting}
-          className="absolute right-4 top-4 p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-50"
+          className="absolute right-4 top-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors disabled:opacity-50 cursor-pointer"
         >
           <X className="w-4 h-4 stroke-[2]" />
         </button>
@@ -182,10 +186,10 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
                 disabled={isSubmitting}
               />
               {isDuplicateRegister && duplicateMatch && (
-                <div className="mt-2 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-normal flex items-start gap-1.5 animate-fade-in leading-relaxed">
+                <div className="mt-2 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-600 font-normal flex items-start gap-1.5 leading-relaxed animate-in fade-in duration-200">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5 stroke-[2]" />
                   <div>
-                    <strong className="font-semibold">{duplicateMatch.item_name}</strong> {t.alreadyExist}. {t.addExistingStock || "Submitting will aggregate stock counts together"} ({duplicateMatch.quantity ?? 0} {t.pcs}).
+                    <strong className="font-semibold text-slate-800">{duplicateMatch.item_name}</strong> {t.alreadyExist}. {t.addExistingStock || "Submitting will aggregate stock counts together"} ({duplicateMatch.quantity ?? 0} {t.pcs}).
                   </div>
                 </div>
               )}
@@ -215,19 +219,19 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2.5 pt-2">
             <button 
               type="button" 
               onClick={onClose} 
               disabled={isSubmitting}
-              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-xs transition-all tracking-wide disabled:opacity-50"
+              className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium py-2.5 rounded-xl text-xs border border-slate-200 transition-colors duration-200 active:scale-[0.98] tracking-wide disabled:opacity-50 cursor-pointer"
             >
               {t.cancelBtn}
             </button>
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="flex-1 font-medium py-2.5 rounded-xl text-xs active:scale-[0.97] transition-all text-white tracking-wide bg-[#1a5fb4] hover:bg-[#154b91] disabled:bg-slate-400 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 font-medium py-2.5 rounded-xl text-xs active:scale-[0.98] transition-all duration-200 text-white tracking-wide bg-[#1a5fb4] hover:bg-[#154b91] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-3xs cursor-pointer"
             >
               {isSubmitting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin stroke-[2]" />
@@ -246,13 +250,16 @@ const InventoryModal = ({ onSubmit, mode, values, setters, onClose, t, globalIte
   );
 };
 
-
 /**
  * ============================================================================
  * SUB-COMPONENT: InputField
  * ============================================================================
  */
-const InputField = ({ label, value, onChange, placeholder, type = "text", min, inputMode, disabled }: InputFieldProps & { disabled?: boolean }) => (
+interface ExtendedInputFieldProps extends InputFieldProps {
+  disabled?: boolean;
+}
+
+const InputField = ({ label, value, onChange, placeholder, type = "text", min, inputMode, disabled }: ExtendedInputFieldProps) => (
   <div className="space-y-1">
     <label className="block text-slate-500 font-medium text-xs">{label}</label>
     <input 
@@ -263,12 +270,11 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", min, i
       min={min} 
       inputMode={inputMode}
       disabled={disabled}
-      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-normal transition-all disabled:opacity-60" 
+      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 bg-slate-50 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-normal transition-all duration-200 disabled:opacity-60 text-slate-800 placeholder:text-slate-400" 
       required 
     />
   </div>
 );
-
 
 /**
  * ============================================================================
@@ -276,11 +282,11 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", min, i
  * ============================================================================
  */
 const InventoryList = React.memo(({ items, onEdit, onDelete, t }: InventoryListProps) => (
-  <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-3xs overflow-hidden">
     {items.length === 0 ? (
       <p className="text-center text-slate-400 text-sm py-12 font-normal">{t.noSalesGeneric}</p>
     ) : (
-      <div className="w-full overflow-x-auto max-h-[calc(100vh-240px)] overflow-y-auto">
+      <div className="w-full overflow-x-auto max-h-[calc(100vh-240px)] overflow-y-auto no-scrollbar">
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
             <tr className="text-slate-400 text-xs font-semibold tracking-wide">
@@ -303,7 +309,6 @@ const InventoryList = React.memo(({ items, onEdit, onDelete, t }: InventoryListP
 
 InventoryList.displayName = 'InventoryList';
 
-
 /**
  * ============================================================================
  * SUB-COMPONENT: InventoryRow
@@ -319,7 +324,7 @@ const InventoryRow = ({ item, onEdit, onDelete, t }: InventoryRowProps) => {
       : "text-emerald-700 bg-emerald-50 border-emerald-100";
 
   return (
-    <tr className="hover:bg-slate-50/70 transition-colors group">
+    <tr className="hover:bg-slate-50/60 transition-colors duration-150 group">
       <td className="py-3.5 px-4 font-semibold text-slate-800 text-xs sm:text-sm">{item.item_name}</td>
       
       <td className="py-3.5 px-4 text-center whitespace-nowrap">
@@ -334,11 +339,11 @@ const InventoryRow = ({ item, onEdit, onDelete, t }: InventoryRowProps) => {
       </td>
       
       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-        <div className="flex items-center justify-center gap-1.5">
+        <div className="flex items-center justify-center gap-1">
           <button 
             type="button"
             onClick={() => onEdit(item)} 
-            className="p-1.5 rounded-lg text-slate-400 hover:text-[#1a5fb4] hover:bg-[#1a5fb4]/5 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-[#1a5fb4] hover:bg-[#1a5fb4]/5 transition-colors cursor-pointer"
             title={t.edit}
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -346,7 +351,7 @@ const InventoryRow = ({ item, onEdit, onDelete, t }: InventoryRowProps) => {
           <button 
             type="button"
             onClick={() => onDelete('item', item.id)} 
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
             title={t.deleteBtn}
           >
             <Trash2 className="w-3.5 h-3.5" />

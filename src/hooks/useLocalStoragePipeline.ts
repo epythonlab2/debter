@@ -1,9 +1,9 @@
 // src/hooks/useLocalStoragePipeline.ts
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { dbService } from '../core/services/dbService';
 import { UserProfile, Shop, Sale, DubeRecord, ToastState } from '../types';
-import { ItemRecord } from '../types/inventory'; // Standardized item format
+import { ItemRecord } from '../types/inventory';
 import { 
   INITIAL_SHOPS, 
   INITIAL_USERS, 
@@ -16,11 +16,7 @@ export type LedgerPeriod = 'today' | 'yesterday' | 'weekly' | 'all';
 
 /**
  * Universal Unified Client-Side Storage Orchestration Hook.
- * Manages foundational offline fallback layers, runtime application state structures,
- * authentication synchronization lifecycle gates, and dynamic layout form inputs.
- * * @param {string} [initialLang='en'] Baseline application localization string fallback.
- * @param {any} [t={}] Global translation resource matrix reference.
- * @returns {Object} Consolidated collection of domain states, bound UI callbacks, and form properties.
+ * Hardened with defensive async race-condition shields and deterministic hydration pipelines.
  */
 export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {}) {
   
@@ -28,13 +24,11 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- LOCALIZATION PROTOCOLS ---
   // =========================================================================
   
-  /** Central localization tracker core */
   const [lang, setLang] = useState<'en' | 'am'>(() => {
     const savedLang = localStorage.getItem('habesha_ledger_lang');
     return (savedLang === 'en' || savedLang === 'am') ? savedLang : 'en';
   });
 
-  /** Updates the user's persistent localization key whenever state adjustments occur */
   useEffect(() => {
     localStorage.setItem('habesha_ledger_lang', lang);
   }, [lang]);
@@ -43,102 +37,67 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- PRIMARY CACHED CORE DOMAIN STATE REGISTERS ---
   // =========================================================================
 
-  /** Dynamic list of all operating storefront facilities */
   const [shops, setShops] = useState<Shop[]>([]);
-  
-  /** Verified system administrative and associate records array */
   const [users, setUsers] = useState<UserProfile[]>([]);
-  
-  /** Unified product catalog repository tracking quantities and base prices */
   const [items, setItems] = useState<ItemRecord[]>([]);
-  
-  /** Global history logs ledger array */
   const [sales, setSales] = useState<Sale[]>([]);
-  
-  /** Accounts receivable uncollateralized credit list ledger */
   const [dubeRecords, setDubeRecords] = useState<DubeRecord[]>([]);
-  
-  /** Baseline target parameters metric marker */
   const [dailyGoal, setDailyGoal] = useState<number>(10000);
-  
-  /** Profile instance payload matching the present login layer */
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  
-  /** Initial system cache hydration process indicator flag */
   const [loadingPipeline, setLoadingPipeline] = useState(true);
-  
-  /** Remote operational transaction spinner flag */
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // =========================================================================
   // --- UI LAYOUT FILTER & ROUTER PREFERENCE INDICATORS ---
   // =========================================================================
 
-  /** Navigation index tracking targeted UI sub-panes */
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  
-  /** Selected shop module constraint filter index */
   const [selectedShopFilter, setSelectedShopFilter] = useState<string>('all');
-  
-  /** Toggle split view switcher index */
   const [ledgerToggle, setLedgerToggle] = useState<'sales' | 'dube'>('sales'); 
-  
-  /** Input query binding matching ledger searches */
   const [ledgerSearch, setLedgerSearch] = useState<string>('');
-  
-  /** Input query binding matching inventory stock search utilities */
   const [inventorySearch, setInventorySearch] = useState<string>('');
-  
-  /** Dynamic notification event state link */
   const [toast, setToast] = useState<ToastState | null>(null);
-  
-  /** Temporal scale window reference index */
   const [activePeriod, setActivePeriod] = useState<LedgerPeriod>('today'); 
+
+  // Refs used to provide reliable atomic context reading within asynchronous closures
+  const filterRef = useRef(selectedShopFilter);
+  useEffect(() => { filterRef.current = selectedShopFilter; }, [selectedShopFilter]);
 
   // =========================================================================
   // --- DYNAMIC CONTROL OVERLAY LAYOUT CONFIGURATIONS ---
   // =========================================================================
 
-  /** Confirm dialog operational state controller */
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     isOpen: boolean;
     type: 'item' | 'shop' | 'sale' | null;
     targetId: string | null;
   }>({ isOpen: false, type: null, targetId: null });
 
-  /** Shop deployment details layout utility context */
   const [shopModal, setShopModal] = useState<{
     isOpen: boolean;
     mode: 'create' | 'edit';
     data: Shop | null;
   }>({ isOpen: false, mode: 'create', data: null });
 
-  /** Credit resolution ledger execution frame controller */
   const [settleDubeModal, setSettleDubeModal] = useState<{
     isOpen: boolean;
     dubeId: string | number | null; 
   }>({ isOpen: false, dubeId: null });
 
-  /** Inventory form presentation flag */
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  
-  /** Inventory form operation target focus switcher */
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
   // =========================================================================
   // --- INTERFACE FIELD DATA BINDING POOLS ---
   // =========================================================================
 
-  /* --- Staff Enrollment Context Properties --- */
   const [salesName, setSalesName] = useState<string>('');
   const [salesPhone, setSalesPhone] = useState<string>('');
   const [salesEmail, setSalesEmail] = useState<string>('');
   const [salesPassword, setSalesPassword] = useState<string>('');
 
-  /* --- Transaction Formulation Field Elements --- */
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [salePrice, setSalePrice] = useState<string>('');
-  // CORRECTED: Aligned to string representation to serve text inputs flawlessly
   const [saleQty, setSaleQty] = useState<string>('1');
   const [customItemName, setCustomItemName] = useState<string>(''); 
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
@@ -146,12 +105,10 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   const [buyerPhone, setBuyerPhone] = useState<string>('');
   const [saleDate, setSaleDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  /* --- Stock Item Specification Inputs --- */
   const [itemName, setItemName] = useState<string>(''); 
   const [newInvPrice, setNewInvPrice] = useState<string>('');
   const [itemQuantity, setItemQuantity] = useState<string>(''); 
 
-  /* --- Storefront Initialization Properties --- */
   const [newShopName, setNewShopName] = useState<string>('');
   const [newShopLocation, setNewShopLocation] = useState<string>('');
   const [newShopOwner, setNewShopOwner] = useState<string>('');
@@ -160,11 +117,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- SYSTEM LOGS & STATUS LIGHTWEIGHT UTILITIES ---
   // =========================================================================
 
-  /**
-   * Triggers layout banner alert detailing programmatic feedback statements.
-   * * @param {string} message Text segment displaying inside the toast payload.
-   * @param {'success'|'error'} [type='success'] Validation context sorting classification marker.
-   */
   const triggerToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ id: Date.now(), message, type });
   };
@@ -174,20 +126,21 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // =========================================================================
 
   /**
-   * Dispatches asynchronous aggregation pipelines fetching transactional histories and inventory states.
-   * Mirrors database query strings locally via system localStorage clusters to ensure instant offline bootstrapping capabilities.
-   * * @async
-   * @function syncCloudDatabases
-   * @param {UserProfile|null} [userSession=currentUser] Target user record driving session visibility constraints.
+   * Dispatches asynchronous aggregation pipelines fetching transactions and items.
+   * Reinforced with runtime parameters to safely prevent hook state desynchronization.
    */
-  const syncCloudDatabases = async (userSession: UserProfile | null = currentUser) => {
+  const syncCloudDatabases = async (
+    userSession: UserProfile | null = currentUser, 
+    forcedFilter?: string
+  ) => {
     if (!userSession) return;
     setIsLoading(true);
     try {
       const isSuperAdmin = userSession.role === 'super_admin';
+      const targetFilter = forcedFilter ?? filterRef.current;
       
       const shopScope = isSuperAdmin 
-        ? (selectedShopFilter === 'all' ? undefined : selectedShopFilter) 
+        ? (targetFilter === 'all' ? undefined : targetFilter) 
         : (userSession.shop_id || undefined);
 
       const [cloudShops, cloudItems, cloudSales, cloudDube] = await Promise.all([
@@ -222,7 +175,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         }
       }
     } catch (err: any) {
-      console.error("Database sync failed:", err);
+      console.error("Database sync pipeline failure:", err);
     } finally {
       setIsLoading(false);
     }
@@ -232,10 +185,10 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- INTEGRATED COMPONENT LIFECYCLE INTERCEPTORS ---
   // =========================================================================
 
-  /**
-   * Root Hydration Engine Lifecycle Hook.
-   */
+  /** Root Cache Hydration Architecture Engine Lifecycle Gate */
   useEffect(() => {
+    let isMounted = true;
+    
     async function hydrateAndSync() {
       const localShops = localStorage.getItem('debter_v1_shops');
       const localUsers = localStorage.getItem('debter_v1_users');
@@ -244,6 +197,8 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       const localDube = localStorage.getItem('debter_v1_dube');
       const localGoal = localStorage.getItem('debter_v1_goal');
       const localSession = localStorage.getItem('debter_v1_current_user');
+
+      if (!isMounted) return;
 
       if (localShops) setShops(JSON.parse(localShops));
       else setShops(INITIAL_SHOPS);
@@ -269,7 +224,9 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
           const parsedUser = JSON.parse(localSession);
           const { data: freshDbUser, error } = await supabase
             .from('users')
-            .select('*')
+            .select(`*, shops (
+                location
+              )`)
             .eq('id', parsedUser.id)
             .maybeSingle();
 
@@ -284,12 +241,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
               shop_id: freshDbUser.shop_id,
               businessName: freshDbUser.business_name,
               approved: freshDbUser.approved,
-              createdBy: freshDbUser.created_by
+              createdBy: freshDbUser.created_by,
+              location: freshDbUser.shops?.location
             };
             localStorage.setItem('debter_v1_current_user', JSON.stringify(activeSession));
             setCurrentUser(activeSession);
             
-            if (activeSession?.role === 'sales') {
+            if (activeSession.role === 'sales') {
               setActiveTab('entry');
             }
           } else {
@@ -305,17 +263,21 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       }
       
       setLoadingPipeline(false);
+      // Safe execution passing direct variables to escape async render boundaries
       if (activeSession) {
-        await syncCloudDatabases(activeSession);
+        await syncCloudDatabases(activeSession, filterRef.current);
       }
     }
 
     hydrateAndSync();
+    return () => { isMounted = false; };
   }, []);
 
-  /** Listens for administrative shop filter toggles to execute background query shifts */
+  /** Listens for administrative shop filter toggles equipped with clean sync guards */
   useEffect(() => {
-    if (currentUser) syncCloudDatabases();
+    if (currentUser) {
+      syncCloudDatabases(currentUser, selectedShopFilter);
+    }
   }, [selectedShopFilter]);
 
   /** Listens for item selection mutations during checkout processing */
@@ -332,17 +294,11 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- DATA MUTATION CALLBACK METRIC HANDLERS ---
   // =========================================================================
 
-  /**
-   * Modifies daily performance thresholds and saves configurations to the local disk.
-   */
   const handleUpdateGoal = (newGoal: number) => {
     setDailyGoal(newGoal);
     localStorage.setItem('debter_v1_goal', String(newGoal));
   };
 
-  /**
-   * Validates and registers sales transaction logs across database connections.
-   */
   const handleRecordSale = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -376,8 +332,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     setSales(updatedSalesArray);
     localStorage.setItem('debter_v1_sales', JSON.stringify(updatedSalesArray));
 
-  
-
     let updatedDubeArray = [...dubeRecords];
     if (dbPaymentMethod === 'dube') {
       const newDubeRecord: DubeRecord = {
@@ -388,7 +342,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         amount: Number(salePrice) * numericQty,
         status: 'unpaid' as const,
         created_at: new Date().toISOString(),
-        // 🟢 FIX: Converts string | null gracefully to a strict string primitive
         shop_id: currentUser.shop_id ?? "" 
       };
       updatedDubeArray = [newDubeRecord, ...dubeRecords];
@@ -396,6 +349,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       localStorage.setItem('debter_v1_dube', JSON.stringify(updatedDubeArray));
     }
 
+    // Flawless baseline visual field cleanup
     setSelectedItemId('');
     setSalePrice('');
     setSaleQty('1');
@@ -412,19 +366,16 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       
       await dbService.insertSaleWithDube(salePayload, dubePayload);
       triggerToast(lang === 'en' ? "Transaction synchronized with cloud!" : "ሽያጩ ተመሳስሏል!", "success");
-      await syncCloudDatabases();
+      await syncCloudDatabases(currentUser);
       
     } catch (networkError: any) {
       console.warn(
-        "Cloud insertion deferred. Client operating inside offline mode. Payload cached successfully:", 
+        "Cloud insertion deferred. Operating offline mode. Payload cached successfully:", 
         networkError.message || networkError
       );
     }
   };
 
-  /**
-   * Commits inventory additions or adjustments across structural system indices.
-   */
   const handleRegisterItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser?.shop_id) return;
@@ -456,19 +407,15 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setItemQuantity('');
       setSelectedItemId('');
       setIsModalOpen(false);
-      await syncCloudDatabases();
+      await syncCloudDatabases(currentUser);
     } catch (err: any) {
       triggerToast(err.message, "error");
     }
   };
 
-  /**
-   * Initializes a physical retail shop partition framework.
-   */
   const handleSaveShop = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // CORRECTED: 'owner_id' swapped to 'ownerId' to align flawlessly with the interface contract
       await dbService.createShop({
         id: `shop-${Date.now()}`,
         name: newShopName.trim(),
@@ -480,29 +427,23 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setNewShopLocation('');
       setNewShopOwner('');
       setShopModal({ isOpen: false, mode: 'create', data: null });
-      await syncCloudDatabases();
+      await syncCloudDatabases(currentUser);
     } catch (err: any) {
       triggerToast(err.message, "error");
     }
   };
 
-  /**
-   * Alters status validation properties for platform managers.
-   */
   const handleApproveOwner = async (userId: string, targetStatus: boolean) => {
     try {
       const { error } = await supabase.from('users').update({ approved: targetStatus }).eq('id', userId);
       if (error) throw error;
       triggerToast("Status updated successfully", "success");
-      await syncCloudDatabases();
+      await syncCloudDatabases(currentUser);
     } catch (err: any) {
       triggerToast(err.message, "error");
     }
   };
 
-  /**
-   * Registers a new salesperson profile while handling role-based shop scoping.
-   */
   const handleRegisterSalesperson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -544,19 +485,17 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setSalesEmail('');
       setSalesPassword('');
       
-      await syncCloudDatabases();
+      await syncCloudDatabases(currentUser);
     } catch (err: any) {
       triggerToast(err.message, "error");
     }
   };
 
-  /** Clears authentication tokens from client session memories and restarts view components */
   const handleLogout = () => {
     localStorage.removeItem('debter_v1_current_user');
     window.location.reload();
   };
 
-  /** Handles modal configuration and state hydration rules for storefront modifications */
   const handleOpenShopModal = (mode: 'create' | 'edit', data: any = null) => {
     setShopModal({ isOpen: true, mode, data });
     if (mode === 'edit' && data) {
@@ -565,20 +504,49 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setNewShopOwner(data.owner_id || data.ownerId || '');
     }
   };
+  
+  const handleUpdateProfile = async (data: { fullName: string; shopName: string; email: string; location: string }) => {
+    if (!currentUser?.id) return;
+    setIsLoading(true);
+    try {
+      const updatedUser = await dbService.updateUserProfile(currentUser.id, data);
+      setCurrentUser(updatedUser);
+      localStorage.setItem('debter_v1_current_user', JSON.stringify(updatedUser));
+      triggerToast(lang === 'en' ? "Profile modified successfully!" : "የግል መረጃዎ ተስተካክሏል!", "success");
+      await syncCloudDatabases(updatedUser);
+    } catch (err: any) {
+      triggerToast(err.message || "Failed to modify profile adjustments.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (data: { currentPassword: string; newPassword: string }) => {
+    if (!currentUser?.id) return;
+    setIsLoading(true);
+    try {
+      await dbService.updateAccountPassword(currentUser.id, data.newPassword);
+      const secureUserSession = { ...currentUser, must_change_password: false };
+      setCurrentUser(secureUserSession);
+      localStorage.setItem('debter_v1_current_user', JSON.stringify(secureUserSession));
+      triggerToast(lang === 'en' ? "Password updated successfully!" : "የይለፍ ቃልዎ ተቀይሯል!", "success");
+    } catch (err: any) {
+      triggerToast(err.message || "Failed to update authentication credentials.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // =========================================================================
   // --- DERIVED MEMOIZED TRANSFORMATION PIPELINES ---
   // =========================================================================
 
-  /** Filtered collection of system users holding explicit administrative access clearance keys */
   const potentialOwners = useMemo(() => users.filter(u => u.role === 'admin'), [users]);
   
-  /** Filtered items list mapped exclusively to the active manager's storefront division coordinates */
   const activeShopItems = useMemo(() => items.filter(i => String(i.shop_id) === String(currentUser?.shop_id)), [items, currentUser]);
 
   return {
-    lang,
-    setLang,
+    lang, setLang,
     shops, setShops,
     users, setUsers,
     items, setItems,
@@ -598,15 +566,12 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     shopModal, setShopModal,
     settleDubeModal, setSettleDubeModal,
     potentialOwners, activeShopItems,
-    
     isModalOpen, setIsModalOpen,
     modalMode, setModalMode,
-    
     salesName, setSalesName,
     salesPhone, setSalesPhone,
     salesEmail, setSalesEmail,
     salesPassword, setSalesPassword,
-
     selectedItemId, setSelectedItemId,
     salePrice, setSalePrice,
     saleQty, setSaleQty,
@@ -615,15 +580,14 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     buyerName, setBuyerName,
     buyerPhone, setBuyerPhone,
     saleDate, setSaleDate,
-    
     itemName, setItemName,
     newInvPrice, setNewInvPrice,
     itemQuantity, setItemQuantity, 
-    
     newShopName, setNewShopName,
     newShopLocation, setNewShopLocation,
     newShopOwner, setNewShopOwner,
-    
+    handleUpdateProfile,
+    handleUpdatePassword,
     handleRecordSale,
     handleRegisterItem, 
     handleSaveShop,
@@ -631,6 +595,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     handleRegisterSalesperson,
     handleLogout,
     handleOpenShopModal,
-    syncCloudDatabases
+    syncCloudDatabases: () => syncCloudDatabases(currentUser)
   };
 }

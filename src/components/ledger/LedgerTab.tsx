@@ -69,14 +69,14 @@ export default function LedgerTab({
   const activeToggleTheme = useMemo(() => {
     if (ledgerToggle === "sales") {
       return {
-        bg: "bg-white border-slate-200/80 shadow-xs",
+        bg: "bg-white border-slate-200/80 shadow-2xs",
         textSales: "text-slate-900 font-semibold",
         textDube: "text-slate-500 hover:text-slate-700 font-medium",
         transform: "translateX(0%)"
       };
     }
     return {
-      bg: "bg-slate-900 border-slate-950 shadow-xs",
+      bg: "bg-slate-950/95 border-slate-950 shadow-2xs",
       textSales: "text-slate-500 hover:text-slate-700 font-medium",
       textDube: "text-white font-semibold",
       transform: "translateX(100%)"
@@ -120,7 +120,10 @@ export default function LedgerTab({
   }, [groupedSales.length, visibleSalesGroups, partitionedDubeRecords.length, visibleDubeCount, ledgerToggle]);
 
   return (
-    <div className="space-y-4 antialiased selection:bg-[#1a5fb4]/10 px-0.5 font-sans">
+    <div 
+      className="space-y-4 antialiased selection:bg-[#1a5fb4]/10 px-0.5"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* SEGMENTED TOGGLE SWITCH */}
       <div className="relative grid grid-cols-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50 isolate gap-1">
@@ -135,7 +138,7 @@ export default function LedgerTab({
         <button
           type="button"
           onClick={() => setLedgerToggle("sales")}
-          className={`py-2.5 text-xs tracking-wide rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none border border-transparent active:scale-[0.98] ${activeToggleTheme.textSales}`}
+          className={`py-2.5 text-xs tracking-wide rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer select-none border border-transparent active:scale-[0.98] ${activeToggleTheme.textSales}`}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0 stroke-[2]" />
           <span>{t.salesLedgerToggle || "Sales Log"}</span>
@@ -144,7 +147,7 @@ export default function LedgerTab({
         <button
           type="button"
           onClick={() => setLedgerToggle("dube")}
-          className={`py-2.5 text-xs tracking-wide rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none border border-transparent active:scale-[0.98] ${activeToggleTheme.textDube}`}
+          className={`py-2.5 text-xs tracking-wide rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer select-none border border-transparent active:scale-[0.98] ${activeToggleTheme.textDube}`}
         >
           <CreditCard className="w-3.5 h-3.5 shrink-0 stroke-[2]" />
           <span>{t.dubeLedgerToggle || "Dube Credit"}</span>
@@ -152,14 +155,14 @@ export default function LedgerTab({
       </div>
 
       {/* FILTER INPUT DECK */}
-      <div className="relative shadow-2xs rounded-2xl group h-11">
-        <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors stroke-[2]" />
+      <div className="relative shadow-3xs rounded-2xl group h-11">
+        <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-[#1a5fb4] transition-colors duration-200 stroke-[2]" />
         <input 
           type="text" 
           value={ledgerSearch}
           onChange={(e) => setLedgerSearch(e.target.value)}
           placeholder={ledgerToggle === "sales" ? (t.searchPlaceholder || "Search...") : (t.searchPlaceholder || "Search buyers...")}
-          className="w-full h-full pl-11 pr-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-800 font-normal outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all placeholder:text-slate-400 placeholder:font-normal"
+          className="w-full h-full pl-11 pr-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-800 font-normal outline-none focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all duration-200 placeholder:text-slate-400 placeholder:font-normal"
         />
       </div>
 
@@ -171,9 +174,9 @@ export default function LedgerTab({
               key={period}
               type="button"
               onClick={() => setActivePeriod(period)}
-              className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide border transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+              className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide border transition-all duration-200 cursor-pointer whitespace-nowrap active:scale-95 ${
                 activePeriod === period
-                  ? "bg-[#1a5fb4] border-[#1a5fb4] text-white shadow-xs"
+                  ? "bg-[#1a5fb4] border-[#1a5fb4] text-white shadow-3xs"
                   : "bg-white border-slate-200/80 text-slate-500 hover:text-slate-800 hover:border-slate-300"
               }`}
             >
@@ -188,20 +191,20 @@ export default function LedgerTab({
               key={status}
               type="button"
               onClick={() => setDubeStatusFilter(status)}
-              className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide border transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 ${
+              className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide border transition-all duration-200 flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 ${
                 dubeStatusFilter === status
-                  ? "bg-[#1a5fb4] border-[#1a5fb4] text-white shadow-xs"
+                  ? "bg-[#1a5fb4] border-[#1a5fb4] text-white shadow-3xs"
                   : "bg-white border-slate-200/80 text-slate-500 hover:text-slate-800 hover:border-slate-300"
               }`}
             >
               {status === 'unpaid' ? (
                 <>
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 group-hover:text-white shrink-0 stroke-[2]" />
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 stroke-[2]" />
                   <span>{t.unpaid || "Unpaid Credit"}</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 group-hover:text-white shrink-0 stroke-[2]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 stroke-[2]" />
                   <span>{t.paidInFull || "Settled Records"}</span>
                 </>
               )}
@@ -211,7 +214,7 @@ export default function LedgerTab({
       </div>
 
       {/* LEDGER VIEWS FOR MATRIX SEGMENTS */}
-      <div className="bg-white rounded-3xl border border-slate-200/70 shadow-2xs overflow-hidden relative">
+      <div className="bg-white rounded-3xl border border-slate-200/70 shadow-3xs overflow-hidden relative">
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-100 z-0" />
 
         {ledgerToggle === "sales" ? (
@@ -256,7 +259,7 @@ export default function LedgerTab({
                           const isSettledCredit = (sale as any).is_settled_credit;
 
                           return (
-                            <div key={sale.id} className="flex justify-between items-center py-2.5 hover:bg-slate-50/70 rounded-2xl px-2 -mx-1 transition-colors group">
+                            <div key={sale.id} className="flex justify-between items-center py-2.5 hover:bg-slate-50/70 rounded-2xl px-2 -mx-1 transition-colors duration-200 group">
                               <div className="space-y-1 max-w-[70%]">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-sm font-medium text-slate-800 tracking-tight truncate">
@@ -267,7 +270,7 @@ export default function LedgerTab({
                                     })()}
                                   </p>
                                   
-                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded border tracking-wide scale-[0.95] origin-left ${
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border tracking-wide uppercase ${
                                     method === 'dube' 
                                       ? isSettledCredit 
                                         ? "bg-slate-100 text-slate-600 border-slate-200" 
@@ -316,7 +319,7 @@ export default function LedgerTab({
               lazyDubeRecords.map((dube) => (
                 <div 
                   key={dube.id} 
-                  className={`pt-4 pb-4 pl-8 pr-4 flex justify-between items-center transition-colors hover:bg-slate-50/40 ${
+                  className={`pt-4 pb-4 pl-8 pr-4 flex justify-between items-center transition-colors duration-200 hover:bg-slate-50/40 ${
                     dube.status !== 'unpaid' ? 'opacity-75' : ''
                   }`}
                 >
@@ -326,7 +329,7 @@ export default function LedgerTab({
                         <User className="w-3.5 h-3.5 text-slate-400 shrink-0 stroke-[2]" />
                         {dube.buyer_name}
                       </span>
-                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded border tracking-wide scale-[0.95] origin-left ${
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border tracking-wide uppercase ${
                         dube.status === 'unpaid' 
                           ? "bg-rose-50 text-rose-700 border-rose-100" 
                           : "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -355,7 +358,7 @@ export default function LedgerTab({
                         <button
                           type="button"
                           onClick={() => setSettleDubeModal({ isOpen: true, dubeId: dube.id })}
-                          className="px-3 py-1.5 bg-[#1a5fb4] hover:bg-[#154b91] text-white rounded-xl text-xs font-medium tracking-wide shadow-xs transition-all flex items-center gap-1 active:scale-[0.96] cursor-pointer"
+                          className="px-3 py-1.5 bg-[#1a5fb4] hover:bg-[#154b91] text-white rounded-xl text-xs font-medium tracking-wide shadow-3xs transition-all duration-200 flex items-center gap-1 active:scale-[0.96] disabled:pointer-events-none cursor-pointer"
                         >
                           <Check className="w-3 h-3 stroke-[2.5]" />
                           {t.markAsPaid || "Settle"}

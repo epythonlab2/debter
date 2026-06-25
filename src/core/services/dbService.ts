@@ -9,6 +9,20 @@ export interface GlobalBroadcastPayload {
   createdAt: string;
 }
 
+export interface InsertSalePayload {
+  id?: string;
+  item_id?: string | null;
+  item_name?: string;
+  custom_item_name?: string;
+  quantity: number;
+  price_sold: number;
+  sale_date: string;
+  shop_id: string;
+  recordedBy?: string;
+  paymentMethod?: string;
+  payment_method?: string;
+}
+
 /**
  * Core Data Access Object (DAO) providing synchronized persistence services 
  * between the application client and the Supabase PostgreSQL instance.
@@ -112,7 +126,7 @@ export const dbService = {
       id?: string; 
       quantity?: number; 
       itemName?: string;
-      shop_id?: string | null; // 🟢 Allowed to be optional/nullable here now!
+      shop_id?: string | null;
     }
   ): Promise<Item> {
     const targetId = item.id || crypto.randomUUID();
@@ -125,7 +139,7 @@ export const dbService = {
         id: targetId,
         item_name: resolvedName, 
         default_price: resolvedPrice,
-        shop_id: item.shop_id || null, // 🟢 Defaults gracefully to null for Supabase if missing
+        shop_id: item.shop_id || null,
         quantity: Number(item.quantity || 0)
       }]);
 
@@ -135,7 +149,6 @@ export const dbService = {
       id: targetId,
       item_name: resolvedName,
       default_price: resolvedPrice,
-      // Force return fallback as string or empty if your frontend 'Item' model strictly demands it
       shop_id: item.shop_id || "", 
       quantity: Number(item.quantity || 0)
     };
@@ -220,23 +233,13 @@ export const dbService = {
    * Executes a multi-stage data write that links sales transactions with credit records.
    */
   async insertSaleWithDube(
-    saleData: Omit<Sale, 'recordedBy' | 'dubeId'> & { recordedBy?: string; paymentMethod?: string }, 
+    saleData: InsertSalePayload, 
     dubeData?: { buyer_name: string; buyer_phone: string }
   ): Promise<void> {
     const generatedSaleId = saleData.id || crypto.randomUUID();
     const cleanMethod = (saleData.payment_method || saleData.paymentMethod || 'cash');
 
-    const insertPayload: {
-      id: string;
-      item_id: string | null;
-      quantity: number;
-      price_sold: number;
-      sale_date: string;
-      shop_id: string;
-      recorded_by: string | null;
-      payment_method: string;
-      custom_item_name?: string;
-    } = {
+    const insertPayload: Record<string, any> = {
       id: generatedSaleId,
       item_id: saleData.item_id || null,
       quantity: saleData.quantity,
@@ -247,8 +250,8 @@ export const dbService = {
       payment_method: cleanMethod
     };
 
-    if ((saleData as any).custom_item_name) {
-      insertPayload.custom_item_name = (saleData as any).custom_item_name;
+    if (saleData.custom_item_name) {
+      insertPayload.custom_item_name = saleData.custom_item_name;
     } else if (!saleData.item_id && saleData.item_name) {
       insertPayload.custom_item_name = saleData.item_name;
     }
@@ -260,27 +263,33 @@ export const dbService = {
     if (saleErr) throw saleErr;
 
     if (cleanMethod.toLowerCase().trim() === "dube" && dubeData) {
-      const totalAmount = Number(saleData.quantity ?? 0) * Number(saleData.price_sold ?? 0);
-      const generatedDubeId = crypto.randomUUID();
+      try {
+        const totalAmount = Number(saleData.quantity ?? 0) * Number(saleData.price_sold ?? 0);
+        const generatedDubeId = crypto.randomUUID();
 
-      const { error: dubeErr } = await supabase.from("dube_records").insert([{
-        id: generatedDubeId,
-        buyer_name: dubeData.buyer_name,
-        buyer_phone: dubeData.buyer_phone,
-        amount: totalAmount,
-        status: "unpaid",
-        sale_id: generatedSaleId,
-        shop_id: saleData.shop_id
-      }]);
+        const { error: dubeErr } = await supabase.from("dube_records").insert([{
+          id: generatedDubeId,
+          buyer_name: dubeData.buyer_name,
+          buyer_phone: dubeData.buyer_phone,
+          amount: totalAmount,
+          status: "unpaid",
+          sale_id: generatedSaleId,
+          shop_id: saleData.shop_id
+        }]);
 
-      if (dubeErr) throw dubeErr;
+        if (dubeErr) throw dubeErr;
 
-      const { error: linkErr } = await supabase
-        .from("sales")
-        .update({ dube_id: generatedDubeId })
-        .eq("id", generatedSaleId);
+        const { error: linkErr } = await supabase
+          .from("sales")
+          .update({ dube_id: generatedDubeId })
+          .eq("id", generatedSaleId);
 
-      if (linkErr) throw linkErr;
+        if (linkErr) throw linkErr;
+      } catch (error) {
+        // Rollback strategy: Clean up rogue sales entry if child insertion fails
+        await this.deleteSale(generatedSaleId);
+        throw error;
+      }
     }
   },
   
@@ -314,7 +323,7 @@ export const dbService = {
 
     if (itemError) throw itemError;
 
-    const completeSalePayload = {
+    const completeSalePayload: InsertSalePayload = {
       item_id: fallbackItemId,
       item_name: salePayload.item_name,
       custom_item_name: salePayload.item_name, 
@@ -355,14 +364,12 @@ export const dbService = {
 
   /**
    * Queries customer credit balance accounts tracking outstanding debt profiles.
-   * ⚡ FIXED: Added explicit descending order logic using the record timestamp 
-   * to guarantee newly added or unpaid debt rows hit the user's display instantly.
    */
   async fetchDubeRecords(shopId?: string): Promise<DubeRecord[]> {
     let query = supabase
       .from("dube_records")
       .select("*")
-      .order("created_at", { ascending: false }); // 🟢 Forces latest dube entries first
+      .order("created_at", { ascending: false });
       
     if (shopId && shopId !== 'all' && shopId !== 'undefined') {
       query = query.eq("shop_id", shopId);
@@ -416,24 +423,23 @@ export const dbService = {
   
   /**
    * Updates the forced password change permission status of an owner/operator user profile.
-   * Maps camelCase from the frontend parameters directly to snake_case column layout.
    */
   async updateUserPasswordPermission(userId: string, forceChange: boolean): Promise<void> {
-  console.log(`Sending to DB -> ID: ${userId}, must_change_password: ${forceChange}`);
-  
-  const { data, error } = await supabase
-    .from("users")
-    .update({ must_change_password: forceChange })
-    .eq("id", userId)
-    .select(); // 👈 Add .select() temporarily to see what the DB returns
+    console.log(`Sending to DB -> ID: ${userId}, must_change_password: ${forceChange}`);
+    
+    const { data, error } = await supabase
+      .from("users")
+      .update({ must_change_password: forceChange })
+      .eq("id", userId)
+      .select();
 
-  if (error) {
-    console.error("Supabase returned an error:", error);
-    throw error;
-  }
-  
-  console.log("Database updated successfully. Returned row:", data);
-},
+    if (error) {
+      console.error("Supabase returned an error:", error);
+      throw error;
+    }
+    
+    console.log("Database updated successfully. Returned row:", data);
+  },
 
   /**
    * Fetches active registered user account profiles ordered alphabetically by identifier.
@@ -460,43 +466,38 @@ export const dbService = {
       createdBy: u.created_by,
       created_by: u.created_by,
       password: u.password,
-      
       must_change_password: !!u.must_change_password
     }));
   },
   
 
-// =========================================================================
+  // =========================================================================
   // --- RETRIEVAL & MUTATION SERVICES: USER FEEDBACK ---
   // =========================================================================
 
   /**
-   * Commits an anonymous or authenticated user feedback logging string 
-   * into the tracking telemetry database layer.
+   * Commits an anonymous or authenticated user feedback logging string.
    */
-  // Inside dbService.ts -> submitFeedback()
-async submitFeedback(feedbackText: string, userId?: string | null): Promise<void> {
-  if (!feedbackText.trim()) throw new Error("Feedback cannot be empty.");
+  async submitFeedback(feedbackText: string, userId?: string | null): Promise<void> {
+    if (!feedbackText.trim()) throw new Error("Feedback cannot be empty.");
 
-  // Force any falsey, empty string, or undefined value to a clean primitive null
-  const cleanUserId = userId && userId.trim() !== "" ? userId : null;
+    const cleanUserId = userId && userId.trim() !== "" ? userId : null;
 
-  const { error } = await supabase
-    .from("feedback")
-    .insert([{
-      feedback: feedbackText.trim(),
-      user_id: cleanUserId 
-    }]);
+    const { error } = await supabase
+      .from("feedback")
+      .insert([{
+        feedback: feedbackText.trim(),
+        user_id: cleanUserId 
+      }]);
 
-  if (error) {
-    console.error("Supabase error caught directly inside dbService:", error);
-    throw error;
-  }
-},
+    if (error) {
+      console.error("Supabase error caught directly inside dbService:", error);
+      throw error;
+    }
+  },
   
   /**
    * Fetches full feedback log profiles joined with submitting user metadata via database view.
-   * Chronologically ordered with the newest feedback instances first.
    */
   async fetchUserFeedbackLogs() {
     const { data, error } = await supabase
@@ -514,79 +515,59 @@ async submitFeedback(feedbackText: string, userId?: string | null): Promise<void
       role: row.role || "N/A",
       feedback: row.feedback,
       receivedAt: row.received_at,
-      // 🟢 Read the archive state out of the database view safely
       isArchived: !!row.is_archived 
     }));
   },
 
   /**
-   * Target the underlying base table directly for data state mutations
+   * Target the underlying base table directly for data state mutations.
    */
   async archiveUserFeedback(feedbackId: string) {
     const { error } = await supabase
-      .from('feedback') // 🟢 Write mutations directly to the table, not the view!
+      .from('feedback') 
       .update({ is_archived: true })
       .eq('id', feedbackId);
 
     if (error) throw error;
   },
   
- /**
+  /**
    * Commits an administrative push alert directly to the global_broadcasts database table.
-   * Maps matching JSON camelCase elements into standard SQL snake_case fields.
    */
-  createGlobalBroadcast: async (payload: GlobalBroadcastPayload): Promise<void> => {
+  async createGlobalBroadcast(payload: GlobalBroadcastPayload): Promise<void> {
     try {
-      // ❌ REMOVED / COMMENTED OUT OPTION A (The non-existent custom express route router API)
-      /*
-      const response = await fetch('/api/admin/broadcasts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: payload.message,
-          severity: payload.severity,
-          created_at: payload.createdAt
-        }),
-      });
-      if (!response.ok) throw new Error('Server rejected structural insert operation.');
-      */
-
-      // 🚀 FIXED: UNCOMMENTED OPTION B to write directly to your cloud Supabase database container
       const { error } = await supabase
         .from('global_broadcasts')
         .insert([{ 
           message: payload.message, 
           severity: payload.severity, 
-          created_at: payload.createdAt // Maps smoothly to standard TIMESTAMP column
+          created_at: payload.createdAt 
         }]);
 
       if (error) throw error;
 
       console.log("Data row committed successfully into global_broadcasts table via Supabase Client.");
 
-      // Distribute real-time updates out across local client UI listener frames
       if (typeof window !== 'undefined' && (window as any).__triggerBroadcastMock) {
         (window as any).__triggerBroadcastMock(payload);
       }
     } catch (error) {
       console.error("Database connection insertion transaction aborted:", error);
-      throw error; // Re-throw to keep front-end validation states updated
+      throw error;
     }
   },
 
   /**
    * Sets up a real-time web socket listener directly on the global_broadcasts table.
-   * Runs the callback function automatically whenever an administrative row is inserted.
    */
-  subscribeToGlobalBroadcasts: (callback: (broadcast: any) => void) => {
+  subscribeToGlobalBroadcasts(callback: (broadcast: { id: string; message: string; severity: string; createdAt: string }) => void) {
     const subscription = supabase
       .channel('realtime_global_broadcasts')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'global_broadcasts' },
         (payload) => {
-          const record = payload.new;
-          // Transform snake_case from DB into camelCase expected by your UI Context
+          const record = payload.new as Record<string, any>;
           callback({
             id: String(record.id),
             message: record.message,
@@ -597,7 +578,6 @@ async submitFeedback(feedbackText: string, userId?: string | null): Promise<void
       )
       .subscribe();
 
-    // Returns an un-subscribe teardown mechanism to prevent memory leaks in useEffect
     return () => {
       supabase.removeChannel(subscription);
     };
@@ -613,5 +593,96 @@ async submitFeedback(feedbackText: string, userId?: string | null): Promise<void
 
     if (error) throw error;
   },
-};
+  
+  // =========================================================================
+  // --- USER SELF-SERVICE MUTATIONS ---
+  // =========================================================================
 
+  /**
+   * Updates the authenticated user's profile metadata across the users table,
+   * and synchronizes the associated storefront operational parameters inside the shops table.
+   */
+  async updateUserProfile(
+    userId: string, 
+    data: { fullName: string; shopName: string; email: string; location: string }
+  ): Promise<UserProfile> {
+    if (!userId) throw new Error("Cannot update profile: Missing user identifier context.");
+
+    // 1. Update ONLY fields that exist on the users table (location REMOVED here)
+    const { data: updatedUser, error: userError } = await supabase
+      .from("users")
+      .update({
+        full_name: data.fullName.trim(),
+        business_name: data.shopName.trim(),
+        email: data.email.trim().toLowerCase()
+      })
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (userError) {
+      console.error("Failed to commit user base records to database:", userError);
+      throw userError;
+    }
+
+    // 2. Safely route the location to the shops table where it belongs
+    if (updatedUser.shop_id) {
+      const { error: shopError } = await supabase
+        .from("shops")
+        .update({
+          name: data.shopName.trim(), 
+          location: data.location.trim() 
+        })
+        .eq("id", updatedUser.shop_id);
+
+      if (shopError) {
+        console.warn(`User updated, but associated shop alignment failed to synchronize:`, shopError);
+      }
+    }
+
+    // 3. Construct and map data state directly back to the app UI structures
+    return {
+      id: updatedUser.id,
+      full_name: updatedUser.full_name,
+      fullName: updatedUser.full_name,            
+      identifier: updatedUser.identifier,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      shop_id: updatedUser.shop_id,
+      businessName: updatedUser.business_name || '', 
+      business_name: updatedUser.business_name || '',
+      location: data.location.trim(), // 🟢 Directly returns the updated text to avoid showing blank
+      approved: updatedUser.approved,
+      createdBy: updatedUser.created_by,
+      created_by: updatedUser.created_by,
+      password: updatedUser.password,
+      must_change_password: !!updatedUser.must_change_password
+    };
+  },
+ /**
+ * Updates a user's password directly inside the public users table.
+ * Bypasses Supabase GoTrue Auth completely to support your custom localStorage authentication architecture.
+ */
+async updateAccountPassword(userId: string, newPassword: string): Promise<void> {
+  if (!userId) {
+    throw new Error("Cannot update credentials: Missing security identity context.");
+  }
+  if (!newPassword || newPassword.length < 4) {
+    throw new Error("Password must meet structural rules (minimum 4 characters long).");
+  }
+
+  // 🟢 Directly mutate the public table row using only verified columns
+  const { error: dbError } = await supabase
+    .from("users")
+    .update({ 
+      password: newPassword,
+      must_change_password: false
+    })
+    .eq("id", userId);
+
+  if (dbError) {
+    console.error("Profile password mutation failed to persist:", dbError);
+    throw new Error("Database update failed. Please check your connection and try again.");
+  }
+},
+};

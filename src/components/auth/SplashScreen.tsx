@@ -49,47 +49,40 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-between p-12 z-50 select-none overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 flex flex-col justify-between items-center p-6 bg-gradient-to-b from-[#070d19] to-[#040810] transition-all duration-1000 ease-in-out select-none overflow-hidden font-sans text-slate-100">
       
-      {/* Decorative Branding Background Graphic using brand hex #1a5fb4 */}
-      <div 
-        className="absolute -right-24 -top-24 w-96 h-96 bg-[#1a5fb4]/10 rounded-full blur-3xl pointer-events-none animate-pulse" 
-        style={{ animationDuration: '3000ms' }} 
-      />
-      <div className="absolute -left-24 -bottom-24 w-96 h-96 bg-slate-900/40 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Top Spacer info bar */}
-      <div className="w-full flex justify-between items-center opacity-30 z-10 text-xs font-mono tracking-widest text-slate-400 ">
-        <span>SYS_INIT_OK</span>
-        <span>v1.0.0</span>
+      {/* Top Status Bar Mock */}
+      <div className="w-full flex justify-between items-center text-[10px] text-gray-500 tracking-wider font-mono px-4 mt-2">
+        <span className="animate-pulse">SYS_INIT_OK</span>
+        <span>V1.0.0</span>
       </div>
 
       {/* CENTER ENGINE: Branding, Core Logo, and Identity Title */}
-      <div className="flex flex-col items-center space-y-6 relative z-10 text-center">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#1a5fb4]/20 to-transparent rounded-3xl blur-xl opacity-60 scale-110" />
+      <div className="flex flex-col items-center justify-center flex-grow -translate-y-6">
+        <div className="relative group mb-8">
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-transparent rounded-3xl blur-xl opacity-60 scale-110" />
           <div className="flex-shrink-0 relative">
             <DebterIcon size="lg" />
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold text-white tracking-tight ">
-            Debter-ደብተር
+        <div className="space-y-3 text-center">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-wider text-white flex items-center justify-center gap-1">
+            DEBTER<span className="text-[#f5b700] font-normal">-ደብተር</span>
           </h1>
           
           {isFirstTime ? (
             <div className="space-y-1.5 max-w-sm mx-auto">
-              <p className="text-xs font-semibold text-slate-200 tracking-wide  leading-relaxed">
+              <p className="text-gray-400 text-sm md:text-base font-light tracking-wide">
                 Shop Daily Notebook
               </p>
-              <div className="w-6 h-[1px] bg-slate-800 mx-auto" />
-              <p className="text-xs font-normal text-slate-400 tracking-normal leading-relaxed">
+              <div className="w-6 h-[1px] bg-slate-800/60 mx-auto" />
+              <p className="text-gray-400 text-sm md:text-base font-light tracking-wide">
                 የዕለት ሽያጭ መመዝገቢያ ደብተር
               </p>
             </div>
           ) : (
-            <p className="text-xs font-semibold text-slate-400 tracking-widest  max-w-xs mx-auto leading-relaxed">
+            <p className="text-gray-400 text-sm md:text-base font-light tracking-wide max-w-xs mx-auto">
               {lang === 'en' 
                 ? "Shop Daily Notebook" 
                 : "የዕለት ሽያጭ መመዝገቢያ ደብተር"}
@@ -99,22 +92,21 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
       </div>
 
       {/* BOTTOM RUNTIME: Tracking Indicator and System Progress */}
-      <div className="w-full max-w-xs space-y-4 relative z-10">
-        <div className="flex items-center justify-between text-xs font-semibold  tracking-wide">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Loader2 className="w-3.5 h-3.5 text-[#1a5fb4] animate-spin flex-shrink-0" />
-            <span className={isFirstTime ? "tracking-normal normal-case text-slate-400 font-medium" : "text-slate-400"}>
+      <div className="w-full max-w-xs flex flex-col items-center gap-4 mb-8">
+        <div className="w-full flex justify-between text-xs text-blue-400 font-medium px-1">
+          <span className="flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin flex-shrink-0" />
+            <span className={isFirstTime ? "tracking-wide text-gray-400 font-medium" : "text-gray-400 tracking-wide"}>
               {getLoadingText()}
             </span>
-          </div>
-          <span className="text-[#1a5fb4] tabular-nums font-mono">
-            {progress}%
           </span>
+          <span className="font-mono text-slate-300">{progress}%</span>
         </div>
 
-        <div className="h-1.5 w-full bg-slate-900 border border-slate-800/60 rounded-full overflow-hidden p-0.5">
+        {/* Progress Bar Tracker */}
+        <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-gray-800/80">
           <div 
-            className="h-full bg-[#1a5fb4] rounded-full transition-all duration-75 ease-out shadow-[0_0_8px_rgba(26,95,180,0.5)]"
+            className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-[#f5b700] rounded-full transition-all duration-300 ease-out" 
             style={{ width: `${progress}%` }}
           />
         </div>

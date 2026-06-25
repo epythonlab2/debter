@@ -64,6 +64,7 @@ export function Navigation({
       className={`fixed bottom-0 left-0 right-0 z-40 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pointer-events-none flex flex-col items-end gap-3.5 transform transition-all duration-300 ease-in-out ${
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-36 opacity-0'
       }`}
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
     >
       {/* =================================================================
           1. UNIFIED FLOATING CHAT / FEEDBACK ACTION BUTTON

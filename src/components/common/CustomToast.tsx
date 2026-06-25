@@ -32,11 +32,14 @@ export default function CustomToast({ toast, onClose }: CustomToastProps) {
   if (!toast || !visible) return null;
 
   return (
-    <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border transition-all duration-300 ${
-      toast.type === "error" 
-        ? "bg-rose-50 text-rose-800 border-rose-200" 
-        : "bg-emerald-50 text-emerald-800 border-emerald-200"
-    }`}>
+    <div 
+      className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border transition-all duration-300 ${
+        toast.type === "error" 
+          ? "bg-rose-50 text-rose-800 border-rose-200" 
+          : "bg-emerald-50 text-emerald-800 border-emerald-200"
+      }`}
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       {toast.type === "error" ? (
         <AlertCircle className="w-5 h-5 shrink-0" />
       ) : (

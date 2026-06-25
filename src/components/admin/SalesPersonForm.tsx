@@ -36,7 +36,8 @@ export default function SalesPersonForm({
   return (
     /* Modal Layer Base Container: Dismisses panel elegantly via backdrop blur clicks */
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-xs animate-fade-in antialiased"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
       onClick={onClose}
     >
       {/* Registration Layout Form Card Wrapper */}
@@ -50,7 +51,7 @@ export default function SalesPersonForm({
       >
         {/* Header Title Section */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-          <h3 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">
+          <h3 className="font-extrabold text-xs text-slate-800 tracking-wider">
             {t.registerSalesperson || 'Register New Staff'}
           </h3>
           <button 
@@ -67,7 +68,7 @@ export default function SalesPersonForm({
         <div className="space-y-4">
           {/* Personnel Name Input Control */}
           <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 tracking-wide">
               {t.fullNameLabel || 'Full Name'} <span className="text-rose-500 font-black">*</span>
             </label>
             <input 
@@ -82,7 +83,7 @@ export default function SalesPersonForm({
 
           {/* Contact Identifier Control */}
           <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 tracking-wide">
               {t.phoneOrEmail || 'Phone Number'} <span className="text-rose-500 font-black">*</span>
             </label>
             <input 
@@ -97,7 +98,7 @@ export default function SalesPersonForm({
 
           {/* Email Address Input Control */}
           <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 tracking-wide">
               {t.emailOptional || 'Email Address'} <span className="text-slate-300 font-normal">(Optional)</span>
             </label>
             <input 
@@ -111,7 +112,7 @@ export default function SalesPersonForm({
 
           {/* Secure Access Credentials Password Control */}
           <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 tracking-wide">
               {t.password || 'Login Password'}
             </label>
             <input 
@@ -127,7 +128,7 @@ export default function SalesPersonForm({
         {/* Form Submission Action Target Trigger */}
         <button 
           type="submit" 
-          className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 active:scale-[0.98] text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm focus:ring-4 focus:ring-[#1a5fb4]/10 cursor-pointer"
+          className="w-full bg-[#1a5fb4] hover:bg-[#1a5fb4]/90 active:scale-[0.98] text-white font-black py-3.5 rounded-xl text-xs tracking-wider transition-all shadow-sm focus:ring-4 focus:ring-[#1a5fb4]/10 cursor-pointer"
         >
           {t.createSalesBtn || 'Create Account'}
         </button>

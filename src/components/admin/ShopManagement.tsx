@@ -44,17 +44,20 @@ export default function ShopManagement({
   }, [sourceOwners]);
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-4 shadow-xs">
+    <div 
+      className="bg-white rounded-3xl border border-slate-100 p-6 space-y-4 shadow-xs antialiased"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* Section Header Toolbar */}
       <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+        <h3 className="text-xs font-bold text-slate-400 tracking-widest">
           {t.crudShopsTitle || 'Shops'}
         </h3>
         <button
           type="button"
           onClick={() => handleOpenShopModal('create')}
-          className="text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:opacity-80 transition-all active:scale-95 cursor-pointer"
+          className="text-xs font-bold tracking-wider flex items-center gap-1 hover:opacity-80 transition-all active:scale-95 cursor-pointer"
           style={{ color: '#1a5fb4' }}
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
@@ -101,7 +104,7 @@ export default function ShopManagement({
                   <button
                     type="button"
                     onClick={() => handleOpenShopModal('edit', s)}
-                    className="p-2.5 rounded-xl text-slate-400 bg-slate-50 border border-slate-200/70 hover:border-slate-400 hover:bg-white text-slate-500 transition-all active:scale-95 cursor-pointer"
+                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-slate-400 hover:bg-white text-slate-500 transition-all active:scale-95 cursor-pointer"
                     aria-label="Edit shop"
                   >
                     <Edit2 className="w-3.5 h-3.5" />

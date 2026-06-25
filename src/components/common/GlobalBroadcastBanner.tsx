@@ -61,7 +61,7 @@ export function GlobalBroadcastBanner({ t = {} }: GlobalBroadcastBannerProps) {
       <div className="flex items-center gap-3 max-w-4xl mx-auto flex-1 justify-center pr-6">
         <Icon className="w-4 h-4 shrink-0 animate-bounce" />
         <p className="text-xs sm:text-sm font-bold tracking-wide text-center">
-          <span className="uppercase opacity-90 mr-1.5 px-1.5 py-0.5 bg-black/15 rounded-md text-[10px] tracking-widest font-black">
+          <span className=" opacity-90 mr-1.5 px-1.5 py-0.5 bg-black/15 rounded-md text-[10px] tracking-widest font-black">
             {activeTheme.label}
           </span>
           {activeBroadcast.message}

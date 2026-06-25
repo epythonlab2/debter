@@ -42,7 +42,10 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/60 p-5 space-y-4 shadow-2xs animate-in fade-in duration-200">
+    <div 
+      className="bg-white rounded-3xl border border-slate-200/60 p-5 space-y-4 shadow-2xs animate-in fade-in duration-200 antialiased"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* List Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
@@ -50,11 +53,11 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
           <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl text-slate-500">
             <Users className="w-4 h-4" />
           </div>
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
+          <h3 className="text-xs font-black text-slate-800 tracking-widest">
             {t.myStaffTitle || 'Registered Staff'}
           </h3>
         </div>
-        <span className="bg--[#1a5fb4]/10 text-[#1a5fb4] px-2.5 py-0.5 rounded-full font-black text-[11px]">
+        <span className="bg-[#1a5fb4]/10 text-[#1a5fb4] px-2.5 py-0.5 rounded-full font-black text-[11px]">
           {salesStaff.length}
         </span>
       </div>
@@ -77,7 +80,7 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
                   </p>
                   
                   {/* Active Status Badge Indicator */}
-                  <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wide uppercase ${
+                  <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wide ${
                     staff.approved 
                       ? 'bg-emerald-50 text-emerald-700' 
                       : 'bg-slate-100 text-slate-400'
@@ -108,7 +111,7 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
                     <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">User:</span>
+                        <span className="text-slate-400 font-bold text-[10px] tracking-wider">User:</span>
                         <span className="font-mono text-slate-700 truncate">{staff.username || staff.identifier}</span>
                       </div>
                       <button
@@ -124,7 +127,7 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
                     <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Key className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Pass:</span>
+                        <span className="text-slate-400 font-bold text-[10px] tracking-wider">Pass:</span>
                         <span className="font-mono text-slate-700 truncate tracking-wide">
                           {isPasswordVisible ? (staff.password || 'No Password') : '••••••••'}
                         </span>
@@ -148,14 +151,13 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
                         </button>
                       </div>
                     </div>
-
                   </div>
 
                   {/* Super-Admin Meta Information Matrix row */}
                   {currentUser?.role === 'super_admin' && staff.shop_id && (
                     <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400 sm:col-span-2 mt-0.5">
                       <Store className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                      <span className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider">
                         Shop Key: {String(staff.shop_id).substring(0, 8)}...
                       </span>
                     </div>
@@ -171,7 +173,7 @@ export default function StaffList({ users, currentUser, selectedShopFilter = 'al
                     e.stopPropagation();
                     onToggleStatus(staff);
                   }}
-                  className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all active:scale-95 cursor-pointer shadow-xs ${
+                  className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-wider border transition-all active:scale-95 cursor-pointer shadow-xs ${
                     staff.approved 
                       ? 'bg-rose-50 text-rose-600 border-rose-200/50 hover:bg-rose-100/80 hover:text-rose-700' 
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' 

@@ -45,11 +45,15 @@ export function ShopModal({
       onClose={onClose} 
       title={isEditing ? (t.editShop || 'Edit Shop') : (t.addShopBtn || 'Add Shop')}
     >
-      <form onSubmit={onSubmit} className="space-y-4 font-sans antialiased text-slate-700">
+      <form 
+        onSubmit={onSubmit} 
+        className="space-y-4 antialiased text-slate-700"
+        style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+      >
         
         {/* Shop Name Input */}
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          <label className="block text-xs font-bold text-slate-400 tracking-widest">
             {t.shopName || 'Shop Name'}
           </label>
           <input
@@ -63,7 +67,7 @@ export function ShopModal({
 
         {/* Location Input */}
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          <label className="block text-xs font-bold text-slate-400 tracking-widest">
             {t.location || 'Location'}
           </label>
           <input
@@ -77,7 +81,7 @@ export function ShopModal({
 
         {/* Owner Assignment Dropdown */}
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          <label className="block text-xs font-bold text-slate-400 tracking-widest">
             {t.ownerLabel || 'Owner'}
           </label>
           <div className="relative">
@@ -102,13 +106,13 @@ export function ShopModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-white/50 border border-slate-200/40 rounded-xl transition-all cursor-pointer active:scale-95"
+            className="flex-1 py-3 text-xs font-bold tracking-wider text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-white/50 border border-slate-200/40 rounded-xl transition-all cursor-pointer active:scale-95"
           >
             {t.cancelBtn || 'Cancel'}
           </button>
           <button
             type="submit"
-            className="flex-1 py-3 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] shadow-sm cursor-pointer"
+            className="flex-1 py-3 text-white rounded-xl text-xs font-bold tracking-wider transition-all active:scale-[0.98] shadow-sm cursor-pointer"
             style={{ backgroundColor: '#1a5fb4' }}
           >
             {t.saveBtn || 'Save'}

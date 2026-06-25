@@ -49,7 +49,10 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
   // Standard UI Skeleton State matching app performance architecture
   if (isLoading) {
     return (
-      <div className="space-y-6 pb-8 text-slate-700 antialiased font-sans max-w-2xl mx-auto animate-pulse">
+      <div 
+        className="space-y-6 pb-8 text-slate-700 antialiased max-w-2xl mx-auto animate-pulse"
+        style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+      >
         <div className="h-14 bg-slate-100 rounded-2xl w-full" />
         <div className="h-12 bg-white border border-slate-100 rounded-3xl w-full" />
         {[1, 2, 3].map((n) => (
@@ -64,7 +67,10 @@ export function FeedbackDashboard({ t }: FeedbackDashboardProps) {
   }
 
   return (
-    <div className="space-y-6 pb-8 text-slate-700 antialiased font-sans max-w-2xl mx-auto">
+    <div 
+      className="space-y-6 pb-8 text-slate-700 antialiased max-w-2xl mx-auto"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* SECTION: FILTER ELEMENT CHIPS - ALIGNED TO BRAND COLOR RULES */}
       <div className="bg-slate-100/80 backdrop-blur-xs p-1.5 rounded-2xl border border-slate-200/40 flex gap-1">

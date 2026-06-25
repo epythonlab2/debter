@@ -202,12 +202,18 @@ export default function App() {
         <CustomToast toast={toastData} onClose={salesEngine.clearToast} />
 
         <Header
-          lang={lang}
-          setLang={setLang}
-          currentUser={safeDb.currentUser}
-          handleLogout={salesEngine.handleLogout}
-          t={t}
-        />
+	  lang={lang}
+	  setLang={setLang}
+	  currentUser={safeDb.currentUser}
+	  handleLogout={salesEngine.handleLogout}
+	  /* CRITICAL FIX: Pass down your real pipeline mutation handlers.
+	    (Replace 'db.handleUpdateProfile' and 'db.handleUpdatePassword' with the 
+	     exact function names exposed by your useLocalStoragePipeline hook)
+	  */
+	  onUpdateProfile={db.handleUpdateProfile || db.updateProfile || (async (data) => console.log(data))}
+	  onUpdatePassword={db.handleUpdatePassword || db.updatePassword || (async (data) => console.log(data))}
+	  t={t}
+	/>
 
         <MetaPanel currentUser={safeDb.currentUser} users={safeDb.users} t={t}/>
 

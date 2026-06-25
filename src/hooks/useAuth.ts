@@ -10,11 +10,21 @@ interface Props {
 }
 
 /**
- * Authentication Engine Hook
+ * Authentication & Administrative Engine Hook
  * Manages operational pipelines for profile registration, login verification,
- * input field binding validations, and active session persistence layers.
+ * data synchronization, and security profile structural modifications.
  */
 export function useAuth({ onAuthSuccess, lang }: Props) {
+  // --- SESSION PROFILE STATE ---
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const persisted = localStorage.getItem('debter_v1_current_user');
+      return persisted ? JSON.parse(persisted) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // --- VISUAL ROUTING STATES ---
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -53,7 +63,7 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
     setConfirmPassword('');
   };
 
-  // Reset notifications on workflow toggle
+  // Reset notification frames cleanly on workflow context toggle
   useEffect(() => {
     setErrorMsg('');
     setSuccessMsg('');
@@ -61,7 +71,8 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
   }, [isRegistering]);
 
   /**
-   * Orchestrates form payload serialization and communicates with downstream services.
+   * Orchestrates credentials validation, payload construction, 
+   * and upstream/downstream authentication pipelines.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,9 +113,6 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
           : 'Registration successful! Please login with your password.';
           
         setSuccessMsg(message);
-        
-        // 🛠️ FIXED: Removed resetFormFields() and setIsRegistering(false) from here.
-        // This lets Auth.tsx intercept the success flow and hold the screen.
 
       } else {
         // --- AUTHENTICATION LOGIN ENGINE ---
@@ -119,6 +127,7 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
           role: data.role,
           shop_id: data.shop_id || '', 
           businessName: data.businessName,
+          location: data.location || '',
           approved: !!data.approved,
           createdBy: data.createdBy,
           must_change_password: !!data.must_change_password
@@ -129,6 +138,7 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
         }
 
         localStorage.setItem('debter_v1_current_user', JSON.stringify(user));
+        setCurrentUser(user);
         onAuthSuccess(user);
       }
     } catch (err) {
@@ -188,7 +198,10 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
     return false; 
   };
 
-  const handleChangePasswordSubmit = async (e: React.FormEvent, t?:any) => {
+  /**
+   * Handles immediate force-change password actions required at first login.
+   */
+  const handleChangePasswordSubmit = async (e: React.FormEvent, t?: any) => {
     e.preventDefault(); 
     setChangePasswordError('');
     if (setSuccessMsg) setSuccessMsg(''); 
@@ -230,9 +243,11 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
       setChangePasswordLoading(false);
     }
   };
-
+  
+ 
   return {
     state: {
+      currentUser,
       isRegistering,
       identifier,
       fullName, 
@@ -263,8 +278,9 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
       setChangePasswordError,
       handleSubmit,
       verifyUserExists,
-      resetFormFields, // Exposed so Auth.tsx can clear input structures cleanly on toggle redirect
-      updatePassword: handleChangePasswordSubmit
+      resetFormFields,
+      updatePassword: handleChangePasswordSubmit,
+      
     }
   };
 }

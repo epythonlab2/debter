@@ -121,12 +121,14 @@ export default function RecordSaleTab({
   }, [paymentMethod]);
 
   return (
-    <div className="space-y-4 max-w-md mx-auto antialiased selection:bg-[#1a5fb4]/10 px-0.5 font-sans">
+    <div 
+      className="space-y-4 max-w-md mx-auto antialiased selection:bg-[#1a5fb4]/10 px-0.5"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* SECTION 1: QUICK TAP HOTKEYS */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
         <div className="flex items-center justify-between px-0.5">
-          {/* Inherited dashboard typography styling */}
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             {t.quickTap || "Quick Tap Selection"}
           </h3>
@@ -159,9 +161,9 @@ export default function RecordSaleTab({
                   </span>
                   <div className="flex items-center justify-between w-full mt-auto pt-1 gap-1">
                     <span className={`text-xs font-bold whitespace-nowrap ${isSelected ? "text-blue-50" : "text-[#1a5fb4]"}`}>
-                      {Number(item.default_price || 0).toLocaleString()} <span className="text-[11px] font-medium opacity-80">{t.currency || "ETB"}</span>
+                      {Number(item.default_price || 0).toLocaleString()} <span className="text-xs font-medium opacity-80">{t.currency || "ETB"}</span>
                     </span>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap border ${
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap border ${
                       isSelected ? "bg-[#154b91]/50 border-transparent text-white" : "bg-white text-slate-500 border-slate-200"
                     }`}>
                       {Number(item.quantity || 0).toLocaleString()} {t.pcs || "Pcs"}
@@ -208,7 +210,9 @@ export default function RecordSaleTab({
               <option value="">-- {t.chooseItemPlaceholder || "Choose Product"} --</option>
               {items.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {`${i.item_name} (${t.stock || "Stock"}: ${Number(i.quantity || 0).toLocaleString()} ${t.pcs || "Pcs"})`}
+                  {`
+                    ${i.item_name} (${t.stock || "Stock"}: ${Number(i.quantity || 0).toLocaleString()} ${t.pcs || "Pcs"})
+                  `}
                 </option>
               ))}
               <option value="custom" className="text-[#1a5fb4] font-medium">✨ + {t.unregisteredSale || "Custom Item"}</option>

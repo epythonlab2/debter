@@ -23,7 +23,10 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xl space-y-4 animate-in zoom-in-95 duration-200">
         
         {/* Header */}

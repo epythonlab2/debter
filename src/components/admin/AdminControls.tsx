@@ -22,7 +22,10 @@ export default function AdminControls({
   t
 }: AdminControlsProps) {
   return (
-    <div className="flex gap-2.5 items-center w-full animate-in fade-in duration-200">
+    <div 
+      className="flex gap-2.5 items-center w-full animate-in fade-in duration-200"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
+    >
       
       {/* Search Input Filter Component */}
       <div className="relative flex-1 flex items-center h-11">
