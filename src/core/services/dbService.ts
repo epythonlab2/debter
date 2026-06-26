@@ -661,17 +661,39 @@ export const dbService = {
   },
  /**
  * Updates a user's password directly inside the public users table.
- * Bypasses Supabase GoTrue Auth completely to support your custom localStorage authentication architecture.
+ * Validates that the current password matches before applying changes.
  */
-async updateAccountPassword(userId: string, newPassword: string): Promise<void> {
+async updateAccountPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
   if (!userId) {
     throw new Error("Cannot update credentials: Missing security identity context.");
+  }
+  if (!currentPassword) {
+    throw new Error("You must provide your current password to make changes.");
   }
   if (!newPassword || newPassword.length < 4) {
     throw new Error("Password must meet structural rules (minimum 4 characters long).");
   }
 
-  // 🟢 Directly mutate the public table row using only verified columns
+  // 1. Fetch the user's current password from the database to verify it exists and matches
+  const { data: userRow, error: fetchError } = await supabase
+    .from("users")
+    .select("password")
+    .eq("id", userId)
+    .single();
+
+  if (fetchError || !userRow) {
+    console.error("Failed to fetch user context for validation:", fetchError);
+    throw new Error("User account not found.");
+  }
+
+  // 2. Validate that the typed current password matches the database record
+  // (Note: Since you are bypassing GoTrue and storing plain strings/custom hashes, 
+  // do a direct comparison or your custom decryption check here)
+  if (userRow.password !== currentPassword) {
+    throw new Error("The current password you entered is incorrect.");
+  }
+
+  // 3. 🟢 Current password is valid! Directly mutate the public table row
   const { error: dbError } = await supabase
     .from("users")
     .update({ 
@@ -685,4 +707,5 @@ async updateAccountPassword(userId: string, newPassword: string): Promise<void> 
     throw new Error("Database update failed. Please check your connection and try again.");
   }
 },
+
 };

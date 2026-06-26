@@ -3,8 +3,13 @@ import React, { useMemo, useState, Suspense, lazy, useEffect } from 'react';
 import { translations } from './constants/translations';
 import { MessageSquare } from 'lucide-react';
 
-/** 
+/** * ==========================================
+ * THEME CONTEXT SYSTEM (V4 Integrated Strategy)
  * ==========================================
+ */
+import { ThemeProvider } from './core/context/ThemeContext';
+
+/** * ==========================================
  * LAYOUT COMPONENTS (Static for initial frame stability)
  * ==========================================
  */
@@ -68,7 +73,10 @@ const ViewChunkLoader = ({ message }: { message: string }) => (
   </div>
 );
 
-export default function App() {
+/**
+ * Core application workbench view orchestration tier
+ */
+function MainDashboardApp() {
   const [adminSearch, setAdminSearch] = useState('');
   const [adminPageSize, setAdminPageSize] = useState(10);
   const [splashVisible, setSplashVisible] = useState(true);
@@ -130,7 +138,6 @@ export default function App() {
     const dbUsers = db.users || [];
     const activeUsers = salesEngine.users || [];
     
-    // High-performance deduplication loop instead of full map allocations on type events
     const seenIds = new Set();
     const combined = [];
     
@@ -179,7 +186,8 @@ export default function App() {
 
   if (!safeDb.currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50/90 text-slate-500 dark:bg-[#070d19] flex items-center justify-center p-4 transition-colors duration-200">
+      
         <div className="max-w-md w-full">
           <Auth
             onAuthSuccess={(user) => db.setCurrentUser(user)}
@@ -197,23 +205,22 @@ export default function App() {
 
   return (
     <NotificationProvider>
-      <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
+      {/* Integrated dynamic styling with system theme parameters. 
+        Auto-switches layout backgrounds gracefully on selection changes.
+      */}
+      <div className="min-h-screen bg-slate-50/96 text-slate-800 dark:bg-[#070d19] dark:text-slate-100 flex flex-col transition-colors duration-200">
         <GlobalBroadcastBanner t={t} />
         <CustomToast toast={toastData} onClose={salesEngine.clearToast} />
 
         <Header
-	  lang={lang}
-	  setLang={setLang}
-	  currentUser={safeDb.currentUser}
-	  handleLogout={salesEngine.handleLogout}
-	  /* CRITICAL FIX: Pass down your real pipeline mutation handlers.
-	    (Replace 'db.handleUpdateProfile' and 'db.handleUpdatePassword' with the 
-	     exact function names exposed by your useLocalStoragePipeline hook)
-	  */
-	  onUpdateProfile={db.handleUpdateProfile || db.updateProfile || (async (data) => console.log(data))}
-	  onUpdatePassword={db.handleUpdatePassword || db.updatePassword || (async (data) => console.log(data))}
-	  t={t}
-	/>
+          lang={lang}
+          setLang={setLang}
+          currentUser={safeDb.currentUser}
+          handleLogout={salesEngine.handleLogout}
+          onUpdateProfile={db.handleUpdateProfile || db.updateProfile || (async (data) => console.log(data))}
+          onUpdatePassword={db.handleUpdatePassword || db.updatePassword || (async (data) => console.log(data))}
+          t={t}
+        />
 
         <MetaPanel currentUser={safeDb.currentUser} users={safeDb.users} t={t}/>
 
@@ -341,21 +348,30 @@ export default function App() {
           />
         </Suspense>
 
-        
-
         {isApproved && (
-	    <Navigation
-	      activeTab={salesEngine.activeTab}
-	      setActiveTab={salesEngine.setActiveTab}
-	      setLedgerSearch={salesEngine.setLedgerSearch}
-	      currentRole={safeDb.currentUser.role}
-	      t={t}
-	      // Pass these new props down into your unified navigation layout 
-	      isFeedbackExpanded={isFeedbackExpanded}
-	      onFeedbackClick={() => setIsFeedbackOpen(true)}
-	    />
-	  )}
-	</div>
+          <Navigation
+            activeTab={salesEngine.activeTab}
+            setActiveTab={salesEngine.setActiveTab}
+            setLedgerSearch={salesEngine.setLedgerSearch}
+            currentRole={safeDb.currentUser.role}
+            t={t}
+            isFeedbackExpanded={isFeedbackExpanded}
+            onFeedbackClick={() => setIsFeedbackOpen(true)}
+          />
+        )}
+      </div>
     </NotificationProvider>
+  );
+}
+
+/**
+ * Unified application root initialization container.
+ * Sits at the absolute peak of the node tree hierarchy to feed context downwards.
+ */
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MainDashboardApp />
+    </ThemeProvider>
   );
 }

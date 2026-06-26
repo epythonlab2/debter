@@ -4,11 +4,12 @@ import { LogOut, Settings, User, Building, Palette, ChevronDown, Check, Sun, Moo
 import { DebterIcon } from './DebterIcon';
 import SettingsModal from '../modals/SettingsModal'; 
 
+// 1. IMPORT THE THEME CONTEXT AND HOOK HERE
+import { useTheme } from '@/core/context/ThemeContext';
+
 interface HeaderProps {
   lang: 'en' | 'am';
   setLang: (lang: 'en' | 'am') => void;
-  theme?: 'dark' | 'light' | 'system';
-  setTheme?: (theme: 'dark' | 'light' | 'system') => void;
   currentUser: any;
   handleLogout: () => void;
   /** Relational profile sync pipeline from useAuth hooks */
@@ -21,14 +22,15 @@ interface HeaderProps {
 export function Header({ 
   lang, 
   setLang, 
-  theme = 'system',
-  setTheme = () => {},
   currentUser,
   handleLogout,
   onUpdateProfile,
   onUpdatePassword,
   t 
 }: HeaderProps) {
+  // 2. CONSUME THE GLOBAL THEME STATE FROM YOUR CONTEXT ENGINE
+  const { theme, setTheme } = useTheme();
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -273,21 +275,22 @@ export function Header({
       </header>
 
       {/* RENDER SETTINGS MODAL INTERACTION GATEWAY */}
-      {currentUser && (
-        <SettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          currentUser={{
-            fullName: currentUser.fullName || currentUser.full_name || '',
-            shopName: currentUser.businessName || currentUser.business_name || '',
-            email: currentUser.email || '',
-            location: currentUser.location || ''
-          }}
-          onUpdateProfile={onUpdateProfile}
-          onUpdatePassword={onUpdatePassword}
-          t={t}
-        />
-      )}
+      {/* RENDER SETTINGS MODAL INTERACTION GATEWAY */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen && !!currentUser}
+        onClose={() => setIsSettingsModalOpen(false)}
+        currentUser={{
+          fullName: currentUser?.fullName || currentUser?.full_name || '',
+          shopName: currentUser?.businessName || currentUser?.business_name || '',
+          email: currentUser?.email || '',
+          location: currentUser?.location || ''
+        }}
+        onUpdateProfile={onUpdateProfile}
+        onUpdatePassword={onUpdatePassword}
+        t={t}
+      />
     </>
   );
 }
+
+

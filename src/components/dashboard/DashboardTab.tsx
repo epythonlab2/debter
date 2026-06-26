@@ -129,13 +129,13 @@ export default function DashboardTab({
 
   return (
     <div 
-      className="space-y-5 pb-2 text-slate-700 antialiased w-full p-0 m-0"
+      className="space-y-5 pb-2 text-slate-700 dark:text-slate-200 antialiased w-full p-0 m-0"
       style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
     >
       
       {/* SECTION: TIME FILTER ELEMENT CHIPS - ALIGNED TO BRAND COLOR */}
-      <div className="bg-slate-100/80 backdrop-blur-xs p-1.5 rounded-2xl border border-slate-200/40 flex gap-1">
-        {(['today', 'yesterday', 'week', 'month'] as TimeFilterType[]).map((filterOpt) => {
+      <div className="bg-slate-200/50 dark:bg-slate-900/60 backdrop-blur-xs p-1.5 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 flex gap-1 transition-colors duration-150">
+        {(([ 'today', 'yesterday', 'week', 'month' ] as TimeFilterType[]).map((filterOpt) => {
           const isActive = timeFilter === filterOpt;
           const labels: Record<TimeFilterType, string> = {
             today: t.todayLabel,
@@ -151,37 +151,37 @@ export default function DashboardTab({
               onClick={() => setTimeFilter(filterOpt)}
               className={`flex-1 text-center py-2.5 text-xs font-bold tracking-wider rounded-xl transition-all duration-300 cursor-pointer ${
                 isActive 
-                  ? "text-white shadow-sm font-extrabold scale-[1.01]" 
-                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                  ? "text-white shadow-xs font-extrabold scale-[1.01]" 
+                  : "text-slate-500 dark:text-slate-400 hover:text-[#1a5fb4] dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-800/50"
               }`}
               style={{ backgroundColor: isActive ? '#1a5fb4' : undefined }}
             >
               {labels[filterOpt]}
             </button>
           );
-        })}
+        }))}
       </div>
 
       {/* SECTION: SUPER ADMIN NETWORK MANAGEMENT ROUTER */}
       {currentRole === "super_admin" && (
-        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-xs space-y-4">
-          <label className="block text-xs font-bold tracking-widest text-slate-400">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 p-6 shadow-xs space-y-4 transition-colors duration-150">
+          <label className="block text-xs font-bold tracking-widest text-slate-400 dark:text-slate-500">
             {t.shopSelection || "Network Scope Selection"}
           </label>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="relative flex items-center">
-              <Search className="absolute left-3.5 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3.5 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={shopQuery}
                 onChange={(e) => setShopQuery(e.target.value)}
-                placeholder="Search shops..."
-                className="w-full pl-10 pr-10 py-3 bg-slate-50/80 border border-slate-200/70 rounded-xl outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:bg-white transition-all"
+                placeholder={t.searchShops}
+                className="w-full pl-10 pr-10 py-3 bg-slate-50/80 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 rounded-xl outline-none text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-[#1a5fb4] dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 transition-all"
               />
               {isLoadingShops && (
                 <div className="absolute right-3.5">
-                  <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400 animate-spin" />
                 </div>
               )}
             </div>
@@ -190,17 +190,17 @@ export default function DashboardTab({
               <select 
                 value={selectedShopFilter}
                 onChange={(e) => setSelectedShopFilter(e.target.value)}
-                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-200/70 outline-none text-sm font-semibold text-slate-800 bg-slate-50/80 focus:border-slate-400 focus:bg-white transition-all appearance-none cursor-pointer"
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-200/70 dark:border-slate-800 outline-none text-sm font-semibold text-slate-800 dark:text-slate-200 bg-slate-50/80 dark:bg-slate-950 focus:border-[#1a5fb4] dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 transition-all appearance-none cursor-pointer"
               >
-                <option value="all">{t.allShops || "All Channels Combined"}</option>
+                <option value="all" className="dark:bg-slate-950">{t.allShops || "All Channels Combined"}</option>
                 {shops.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id} className="dark:bg-slate-950">{s.name}</option>
                 ))}
               </select>
-              <div className="absolute left-3.5 top-3.5 pointer-events-none flex items-center gap-1.5 text-slate-400">
-                {selectedShopFilter === "all" ? <Globe className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+              <div className="absolute left-3.5 top-3.5 pointer-events-none flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                {selectedShopFilter === "all" ? <Globe className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" /> : <Store className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />}
               </div>
-              <div className="absolute right-3.5 top-4 pointer-events-none w-2 h-2 border-r-2 border-b-2 border-slate-400 transform rotate-45" />
+              <div className="absolute right-3.5 top-4 pointer-events-none w-2 h-2 border-r-2 border-b-2 border-slate-400 dark:border-slate-500 transform rotate-45" />
             </div>
           </div>
         </div>
@@ -239,30 +239,30 @@ export default function DashboardTab({
       </div>
 
       {/* SECTION: PRIMARY BUSINESS REVENUE CARD & TARGET SCALING MATRIX */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-xs space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 p-6 shadow-xs space-y-6 transition-colors duration-150">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-2">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-slate-400 tracking-widest flex items-center gap-1.5">
+              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest flex items-center gap-1.5">
                 <span>{t.totalExcludingDube || "Revenue"}</span>
-                <span className="text-slate-400/70 font-medium lowercase">({getTimeFilterLabel()})</span>
+                <span className="text-slate-400/70 dark:text-slate-500/70 font-medium lowercase">({getTimeFilterLabel()})</span>
               </h3>
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
             
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold text-slate-900 tracking-tight font-mono">{displayRevenue.toLocaleString()}</span>
-              <span className="text-sm font-bold text-slate-400 tracking-wider">{t.currency}</span>
+              <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight font-mono">{displayRevenue.toLocaleString()}</span>
+              <span className="text-sm font-bold text-slate-400 dark:text-slate-500 tracking-wider">{t.currency}</span>
             </div>
             
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50/60 px-2.5 py-1 rounded-md border border-emerald-100/50 flex items-center w-fit gap-1.5 select-none tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-100/50 dark:border-emerald-900/50 flex items-center w-fit gap-1.5 select-none tracking-wider transition-colors">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>{t.excludeUnpaidLabel}</span>
             </span>
           </div>
 
-          <div className="w-full sm:w-auto text-left sm:text-right space-y-1.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-100/70">
-            <span className="text-xs text-slate-400 font-bold block tracking-widest">
+          <div className="w-full sm:w-auto text-left sm:text-right space-y-1.5 bg-slate-50/80 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100/70 dark:border-slate-800/60 transition-colors">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-bold block tracking-widest">
               {timeFilter === 'week' ? t.weeklyGoal : timeFilter === 'month' ? t.monthlyGoal : t.dailyGoalLabel}
             </span>
             <div className="flex items-center gap-2 justify-start sm:justify-end">
@@ -275,22 +275,22 @@ export default function DashboardTab({
                   !(currentRole === 'super_admin' || currentRole === 'admin')
                 }
                 onChange={(e) => handleUpdateGoal(Number(e.target.value))}
-                className="w-28 px-2.5 py-1 text-left sm:text-right text-base font-bold text-slate-800 border border-slate-200 bg-white rounded-lg outline-none focus:border-slate-400 transition-all disabled:opacity-60 disabled:bg-slate-100 font-mono"
+                className="w-28 px-2.5 py-1 text-left sm:text-right text-base font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg outline-none focus:border-[#1a5fb4] dark:focus:border-blue-500 transition-all disabled:opacity-60 disabled:bg-slate-100 dark:disabled:bg-slate-950 font-mono"
               />
-              <span className="text-sm font-bold text-slate-400 ">{t.currency}</span>
+              <span className="text-sm font-bold text-slate-400 dark:text-slate-500">{t.currency}</span>
             </div>
           </div>
         </div>
 
         {/* SECTION: PROGRESS STATUS BAR INDICATOR WITH INTERNAL PERCENTAGE CIRCLE */}
-        <div className="flex items-center gap-4 bg-slate-50/60 p-4 rounded-2xl border border-slate-100/80">
-          <div className="relative flex items-center justify-center shrink-0 bg-white p-1 rounded-full shadow-xs border border-slate-100">
+        <div className="flex items-center gap-4 bg-slate-50/60 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100/80 dark:border-slate-800/60 transition-colors">
+          <div className="relative flex items-center justify-center shrink-0 bg-white dark:bg-slate-900 p-1 rounded-full shadow-xs border border-slate-100 dark:border-slate-800 transition-colors">
             <svg className="w-14 h-14 transform -rotate-90">
               <circle
                 cx="28"
                 cy="28"
                 r={svgRadius}
-                className="stroke-slate-100"
+                className="stroke-slate-100 dark:stroke-slate-800"
                 strokeWidth="3.5"
                 fill="transparent"
               />
@@ -307,22 +307,22 @@ export default function DashboardTab({
                 className="transition-all duration-500 ease-out"
               />
             </svg>
-            <span className="absolute text-xs font-bold text-slate-800 font-mono">
+            <span className="absolute text-xs font-bold text-slate-800 dark:text-slate-200 font-mono">
               {goalPercent}%
             </span>
           </div>
 
           <div className="flex-1 space-y-2">
             <div className="flex justify-between text-xs tracking-tight">
-              <span className="flex items-center gap-1.5 font-bold text-[#1a5fb4]">
+              <span className="flex items-center gap-1.5 font-bold text-[#1a5fb4] dark:text-blue-400">
                 <TrendingUp className="w-4 h-4" />
                 {t.completeLabel}
               </span>
-              <span className="text-slate-400 font-semibold">
+              <span className="text-slate-400 dark:text-slate-500 font-semibold">
                 {t.targetLabel} {(timeFilter === 'week' ? dailyGoal * 7 : timeFilter === 'month' ? dailyGoal * 30 : dailyGoal).toLocaleString()}
               </span>
             </div>
-            <div className="w-full h-2 bg-slate-200/50 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-200/50 dark:bg-slate-800 rounded-full overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all duration-500 shadow-xs bg-[#1a5fb4]"
                 style={{ width: `${goalPercent}%` }}
@@ -332,42 +332,42 @@ export default function DashboardTab({
         </div>
 
         {/* SUB-SECTION: LIQUID VALUE ROUTE BREAKDOWN */}
-        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs text-slate-400 font-bold tracking-widest">
-          <div>{t.cash} <span className="text-slate-800 font-extrabold block text-base font-mono mt-1">{grossCash.toLocaleString()}</span></div>
-          <div>{t.dube} <span className="text-slate-800 font-extrabold block text-base font-mono mt-1">{grossDube.toLocaleString()}</span></div>
-          <div>{t.transfer} <span className="text-slate-800 font-extrabold block text-base font-mono mt-1">{grossBank.toLocaleString()}</span></div>
+        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-500 font-bold tracking-widest">
+          <div>{t.cash} <span className="text-slate-800 dark:text-slate-200 font-mono font-extrabold block text-base mt-1">{grossCash.toLocaleString()}</span></div>
+          <div>{t.dube} <span className="text-slate-800 dark:text-slate-200 font-mono font-extrabold block text-base mt-1">{grossDube.toLocaleString()}</span></div>
+          <div>{t.transfer} <span className="text-slate-800 dark:text-slate-200 font-mono font-extrabold block text-base mt-1">{grossBank.toLocaleString()}</span></div>
         </div>
       </div>
 
       {/* SECTION: TRIPLE STAT METRIC HORIZONTAL LAYOUT DECK */}
       <div className="grid grid-cols-3 gap-3">
         {/* CARD A: Total Revenue */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-1.5 transition-colors duration-150">
+          <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold tracking-wider block">{t.totalRevenue || "Total"}</span>
-            <Landmark className="w-4 h-4 opacity-40" />
+            <Landmark className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400 opacity-80" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 block tracking-tight font-mono">
+          <span className="text-xl font-extrabold text-slate-900 dark:text-white block tracking-tight font-mono">
             {trueGrossRevenue.toLocaleString()}
           </span>
         </div>
         
         {/* CARD B: Units */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-1.5 transition-colors duration-150">
+          <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold tracking-wider block">{t.unitsSold || 'Units'}</span>
-            <ShoppingBag className="w-4 h-4 opacity-40" />
+            <ShoppingBag className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400 opacity-80" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 block tracking-tight font-mono">{displayUnits}</span>
+          <span className="text-xl font-extrabold text-slate-900 dark:text-white block tracking-tight font-mono">{displayUnits}</span>
         </div>
         
         {/* CARD C: Ticket */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-1.5 transition-colors duration-150">
+          <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold tracking-wider block">{t.avgValue || 'Ticket'}</span>
-            <ArrowUpRight className="w-4 h-4 opacity-40" />
+            <ArrowUpRight className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400 opacity-80" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 block tracking-tight font-mono">
+          <span className="text-xl font-extrabold text-slate-900 dark:text-white block tracking-tight font-mono">
             {salesCount > 0 
               ? (trueGrossRevenue / salesCount).toLocaleString(undefined, { maximumFractionDigits: 0 }) 
               : "0"}
@@ -376,13 +376,13 @@ export default function DashboardTab({
       </div>
 
       {/* SECTION: PRODUCTIVITY LEADERSHIP PRODUCT PANEL */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-xs space-y-4">
-        <h4 className="font-bold text-xs text-slate-800 tracking-widest flex items-center gap-2">
-          <Award className="w-4 h-4 text-[#1a5fb4]" />
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 p-5 shadow-xs space-y-4 transition-colors duration-150">
+        <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 tracking-widest flex items-center gap-2">
+          <Award className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />
           <span>{t.topProducts} ({getTimeFilterLabel()})</span>
         </h4>
         {topItems.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6 font-medium">{t.noSalesGeneric || "No active sales found"}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6 font-medium">{t.noSalesGeneric || "No active sales found"}</p>
         ) : (
           <div className="space-y-4">
             {topItems.map((p, idx) => {
@@ -390,15 +390,15 @@ export default function DashboardTab({
               const ratio = Math.round((p.value / maxVal) * 100);
               return (
                 <div key={idx} className="space-y-2">
-                  <div className="flex justify-between items-center text-sm font-medium text-slate-700 gap-4">
-                    <span className="font-semibold text-slate-600 truncate max-w-[220px]">
+                  <div className="flex justify-between items-center text-sm font-medium text-slate-700 dark:text-slate-300 gap-4">
+                    <span className="font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[220px]">
                       {p.name}
                     </span>
-                    <span className="font-extrabold text-slate-900 shrink-0 font-mono">
-                      {p.value.toLocaleString()} <span className="text-xs text-slate-400 font-bold font-sans ">{t.currency}</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white shrink-0 font-mono">
+                      {p.value.toLocaleString()} <span className="text-xs text-slate-400 dark:text-slate-500 font-bold font-sans ">{t.currency}</span>
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100/60">
+                  <div className="w-full h-2 bg-slate-50 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-100/60 dark:border-slate-800/40 transition-colors">
                     <div 
                       className="h-full rounded-full shadow-xs transition-all duration-500 bg-[#1a5fb4]" 
                       style={{ width: `${ratio}%` }}
@@ -412,13 +412,13 @@ export default function DashboardTab({
       </div>
 
       {/* SECTION: HISTORICAL TREND VISUALIZATION COMPONENT */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-xs space-y-4">
-        <h4 className="font-bold text-xs text-slate-800 tracking-widest flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-slate-400" />
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 p-5 shadow-xs space-y-4 transition-colors duration-150">
+        <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 tracking-widest flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />
           <span>{t.weeklyTrends || "Performance Trends"}</span>
         </h4>
         {last7Days.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6 font-medium">{t.trendLabel}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6 font-medium">{t.trendLabel}</p>
         ) : (
           <div className="flex justify-between items-end h-32 pt-4 gap-3">
             {last7Days.map((d, idx) => {
@@ -435,14 +435,14 @@ export default function DashboardTab({
 
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-                  <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white font-bold text-xs px-2 py-0.5 rounded-md shadow-sm z-10 pointer-events-none whitespace-nowrap font-mono">
+                  <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 dark:bg-slate-800 text-white font-bold text-xs px-2 py-0.5 rounded-md shadow-xs z-10 pointer-events-none whitespace-nowrap font-mono">
                     {d.revenue.toLocaleString()}
                   </div>
 
-                  <div className="w-full bg-slate-50 border border-slate-100/70 rounded-lg flex flex-col justify-end h-24 overflow-hidden">
+                  <div className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100/70 dark:border-slate-800/60 rounded-lg flex flex-col justify-end h-24 overflow-hidden transition-colors">
                     <div 
                       className={`w-full rounded-t-md transition-all duration-500 shadow-xs ${
-                        d.revenue > 0 ? "opacity-100" : "bg-slate-200/40"
+                        d.revenue > 0 ? "opacity-100" : "bg-slate-200/40 dark:bg-slate-800/40"
                       }`}
                       style={{ 
                         height: `${heightPercent}%`, 
@@ -451,10 +451,10 @@ export default function DashboardTab({
                     ></div>
                   </div>
                   <div className="text-center space-y-0.5">
-                    <span className="text-xs font-bold text-slate-400 block tracking-tight">
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block tracking-tight">
                       {translatedDateLabel}
                     </span>
-                    <span className="text-xs font-extrabold text-slate-700 block font-mono">
+                    <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block font-mono">
                       {d.revenue > 0 ? `${Math.round(d.revenue / 1000)}${t.labelK}` : "0"}
                     </span>
                   </div>
@@ -469,36 +469,36 @@ export default function DashboardTab({
       {analytics?.peaks && (
         <div className="grid grid-cols-2 gap-3">
           {/* Peak Day Card */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3 relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold tracking-wider block text-slate-400">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-3 relative overflow-hidden transition-colors duration-150">
+            <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-bold tracking-wider block">
                 {t.peakWeekday || "Peak Day"}
               </span>
-              <Flame className="w-4 h-4 text-[#1a5fb4]" />
+              <Flame className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />
             </div>
             <div>
-              <span className="text-lg font-extrabold text-slate-900 block tracking-tight truncate">
+              <span className="text-lg font-extrabold text-slate-900 dark:text-white block tracking-tight truncate">
                 {t.days?.[analytics.peaks.highestDayOfWeek.dayName] || analytics.peaks.highestDayOfWeek.dayName}
               </span>
-              <span className="text-sm font-semibold text-slate-400 block pt-0.5 font-mono">
+              <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 block pt-0.5 font-mono">
                 {analytics.peaks.highestDayOfWeek.revenue.toLocaleString()} {t.currency}
               </span>
             </div>
           </div>
 
           {/* Peak Month Card */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3 relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold tracking-wider block text-slate-400">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-3 relative overflow-hidden transition-colors duration-150">
+            <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-bold tracking-wider block">
                 {t.peakMonth || "Peak Month"}
               </span>
-              <Gem className="w-4 h-4 text-[#1a5fb4]" />
+              <Gem className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />
             </div>
             <div>
-              <span className="text-lg font-extrabold text-slate-900 block tracking-tight truncate">
+              <span className="text-lg font-extrabold text-slate-900 dark:text-white block tracking-tight truncate">
                 {t.months?.[analytics.peaks.highestMonthOfYear.monthName] || analytics.peaks.highestMonthOfYear.monthName}
               </span>
-              <span className="text-sm font-semibold text-slate-400 block pt-0.5 font-mono">
+              <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 block pt-0.5 font-mono">
                 {analytics.peaks.highestMonthOfYear.revenue.toLocaleString()} {t.currency}
               </span>
             </div>

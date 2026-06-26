@@ -1,1 +1,8 @@
+/* src/index.css (or your primary global CSS file) */
 @import "tailwindcss";
+
+/* 
+ * Tell Tailwind v4 to look for the ".dark" class modifier 
+ * on your root element instead of defaulting strictly to the system OS media query.
+ */
+@custom-variant dark (&:where(.dark, .dark *));

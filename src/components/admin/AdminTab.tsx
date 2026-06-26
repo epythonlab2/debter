@@ -203,12 +203,12 @@ export default function AdminTab(props: AdminTabProps) {
   if (activeSubView === 'feedback' && hasAccessToTelemetry) {
     return (
       <div 
-        className="space-y-5 pb-2 text-slate-700 antialiased w-full p-0 m-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="space-y-5 pb-2 text-slate-700 dark:text-slate-200 antialiased w-full p-0 m-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
         style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
       >
         <button
           onClick={() => setActiveSubView('main')}
-          className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100/80 hover:bg-white/60 border border-slate-200/60 rounded-xl transition-all cursor-pointer active:scale-95 shadow-xs"
+          className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-white/60 dark:hover:bg-slate-700/60 border border-slate-200/60 dark:border-slate-700/80 rounded-xl transition-all cursor-pointer active:scale-95 shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
           {t.backToAdminDesk || "Back to Admin Desk"}
@@ -220,20 +220,20 @@ export default function AdminTab(props: AdminTabProps) {
 
   return (
     <div 
-      className="space-y-5 pb-2 text-slate-700 antialiased w-full p-0 m-0 animate-in fade-in duration-200"
+      className="space-y-5 pb-2 text-slate-700 dark:text-slate-200 antialiased w-full p-0 m-0 animate-in fade-in duration-200"
       style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif" }}
     >
       
       {(currentRole === "super_admin" || currentRole === "admin") && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl shadow-xs transition-colors duration-150">
           <div className="space-y-0.5">
-            <h2 className="text-sm font-bold text-slate-800 tracking-widest">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-widest">
               {currentRole === "super_admin" 
                 ? (t.systemControlMatrix || "System Control Matrix") 
                 : (t.branchControlDesk || "Branch Control Desk")
               }
             </h2>
-            <p className="text-xs text-slate-400 font-semibold">
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
               {currentRole === "super_admin" 
                 ? (t.adjustTenantStates || "Adjust multi-tenant environment states") 
                 : (t.manageLocalStaff || "Manage branch staff access and registration")
@@ -269,7 +269,7 @@ export default function AdminTab(props: AdminTabProps) {
               <button
                 type="button"
                 onClick={() => setActiveSubView('feedback')}
-                className="relative flex items-center justify-center gap-2.5 px-4 py-2.5 bg-slate-50/80 border border-slate-200/70 hover:border-slate-300 hover:bg-white rounded-xl text-xs font-bold text-slate-600 tracking-wider transition-all cursor-pointer active:scale-95 shadow-xs hover:shadow-sm hover:-translate-y-0.5"
+                className="relative flex items-center justify-center gap-2.5 px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 tracking-wider transition-all cursor-pointer active:scale-95 shadow-xs hover:shadow-sm hover:-translate-y-0.5"
               >
                 <MessageSquare className="w-4 h-4" style={{ color: '#1a5fb4' }} />
                 <span>{t.userFeedbackHub || "User Feedback Hub"}</span>
@@ -298,19 +298,19 @@ export default function AdminTab(props: AdminTabProps) {
         <div className="space-y-5 transition-all duration-300">
           
           {/* ✅ HIGH-DENSITY MODERN PILL NAVIGATION */}
-          <div className="bg-slate-100/80 backdrop-blur-xs p-1 rounded-xl border border-slate-200/40 flex gap-1 max-w-sm">
+          <div className="bg-slate-100/80 dark:bg-slate-800/60 backdrop-blur-xs p-1 rounded-xl border border-slate-200/40 dark:border-slate-700/50 flex gap-1 max-w-sm transition-colors duration-150">
             <button
               type="button"
               onClick={() => setSuperTab('shops')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-semibold tracking-wide rounded-lg transition-all duration-300 cursor-pointer ${
                 superTab === 'shops'
-                  ? 'text-[#1a5fb4] bg-white shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-[#1a5fb4] dark:text-blue-400 bg-white dark:bg-slate-900 shadow-xs font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Store className="w-3.5 h-3.5 shrink-0" />
               <span>{t.shopsTabLabel || "Shops"}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold ${superTab === 'shops' ? 'bg-blue-50 text-[#1a5fb4]' : 'bg-slate-200/50 text-slate-500'}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold transition-colors ${superTab === 'shops' ? 'bg-blue-50 dark:bg-blue-950/50 text-[#1a5fb4] dark:text-blue-400' : 'bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400'}`}>
                 {filteredShops.length}
               </span>
             </button>
@@ -320,18 +320,18 @@ export default function AdminTab(props: AdminTabProps) {
               onClick={() => setSuperTab('pending')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-semibold tracking-wide rounded-lg transition-all duration-300 cursor-pointer ${
                 superTab === 'pending'
-                  ? 'text-amber-700 bg-white shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-amber-700 dark:text-amber-400 bg-white dark:bg-slate-900 shadow-xs font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
               <span>{t.pendingOwners || "Pending"}</span>
               {pendingCount > 0 ? (
-                <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-md font-bold animate-pulse">
+                <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded-md font-bold animate-pulse">
                   {pendingCount}
                 </span>
               ) : (
-                <span className="text-xs px-1.5 py-0.5 bg-slate-200/50 text-slate-500 rounded-md font-bold">0</span>
+                <span className="text-xs px-1.5 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-md font-bold">0</span>
               )}
             </button>
 
@@ -340,13 +340,13 @@ export default function AdminTab(props: AdminTabProps) {
               onClick={() => setSuperTab('approved')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-semibold tracking-wide rounded-lg transition-all duration-300 cursor-pointer ${
                 superTab === 'approved'
-                  ? 'text-emerald-700 bg-white shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-900 shadow-xs font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Users className="w-3.5 h-3.5 shrink-0" />
               <span>{t.ownerLabel || "Approved Users"}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold ${superTab === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-200/50 text-slate-500'}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold transition-colors ${superTab === 'approved' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400' : 'bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400'}`}>
                 {approvedCount}
               </span>
             </button>
@@ -366,8 +366,8 @@ export default function AdminTab(props: AdminTabProps) {
             {superTab === 'pending' && (
               <div className="space-y-3">
                 {pendingOwnersList.length === 0 ? (
-                  <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                    <p className="text-xs font-medium text-slate-400">
+                  <div className="text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                       {t.noPendingOwners || "No match or missing pending approvals found."}
                     </p>
                   </div>
@@ -375,40 +375,40 @@ export default function AdminTab(props: AdminTabProps) {
                   pendingOwnersList.map((user) => (
                     <div 
                       key={user.id} 
-                      className="p-5 bg-white border border-slate-100 rounded-3xl shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-slate-800">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                             {user.full_name || user.name || user.displayName || 'Unknown Applicant'}
                           </h4>
-                          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold tracking-wider">
+                          <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-md font-bold tracking-wider">
                             {user.role || 'owner'}
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                           {user.business_name && (
-                            <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                              <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                              <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                               <span>{user.business_name}</span>
                             </div>
                           )}
                           {user.email && (
                             <div className="flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <Mail className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                               <span className="truncate">{user.email}</span>
                             </div>
                           )}
                           {(user.identifier || user.phone) && (
                             <div className="flex items-center gap-1.5">
-                              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                               <span>{user.identifier || user.phone}</span>
                             </div>
                           )}
                           {user.createdAt && (
                             <div className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                               <span>
                                 {new Date(user.createdAt).toLocaleDateString(undefined, { 
                                   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -423,7 +423,7 @@ export default function AdminTab(props: AdminTabProps) {
                         <button
                           type="button"
                           onClick={() => triggerDeleteConfirm('user', user.id)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200/60 hover:border-rose-100 rounded-xl transition-all cursor-pointer"
+                          className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-slate-200/60 dark:border-slate-800 hover:border-rose-100 dark:hover:border-rose-900/60 rounded-xl transition-all cursor-pointer"
                           title={t.rejectApplication || "Reject Application"}
                         >
                           <X className="w-4 h-4" />
@@ -431,7 +431,7 @@ export default function AdminTab(props: AdminTabProps) {
                         <button
                           type="button"
                           onClick={() => handleOwnerApproval(user.id, true)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs tracking-wider rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer"
+                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-bold text-xs tracking-wider rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>{t.approveBtn || "Approve"}</span>

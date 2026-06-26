@@ -506,37 +506,38 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   };
   
   const handleUpdateProfile = async (data: { fullName: string; shopName: string; email: string; location: string }) => {
-    if (!currentUser?.id) return;
-    setIsLoading(true);
-    try {
-      const updatedUser = await dbService.updateUserProfile(currentUser.id, data);
-      setCurrentUser(updatedUser);
-      localStorage.setItem('debter_v1_current_user', JSON.stringify(updatedUser));
-      triggerToast(lang === 'en' ? "Profile modified successfully!" : "የግል መረጃዎ ተስተካክሏል!", "success");
-      await syncCloudDatabases(updatedUser);
-    } catch (err: any) {
-      triggerToast(err.message || "Failed to modify profile adjustments.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!currentUser?.id) return;
+  setIsLoading(true);
+  try {
+    const updatedUser = await dbService.updateUserProfile(currentUser.id, data);
+    setCurrentUser(updatedUser);
+    localStorage.setItem('debter_v1_current_user', JSON.stringify(updatedUser));
+    await syncCloudDatabases(updatedUser);
+    // Removed triggerToast from here so it doesn't show a global toast
+  } catch (err: any) {
+    // Removed error triggerToast
+    throw err; // Crucial: lets the modal catch it and show an inline error
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const handleUpdatePassword = async (data: { currentPassword: string; newPassword: string }) => {
-    if (!currentUser?.id) return;
-    setIsLoading(true);
-    try {
-      await dbService.updateAccountPassword(currentUser.id, data.newPassword);
-      const secureUserSession = { ...currentUser, must_change_password: false };
-      setCurrentUser(secureUserSession);
-      localStorage.setItem('debter_v1_current_user', JSON.stringify(secureUserSession));
-      triggerToast(lang === 'en' ? "Password updated successfully!" : "የይለፍ ቃልዎ ተቀይሯል!", "success");
-    } catch (err: any) {
-      triggerToast(err.message || "Failed to update authentication credentials.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+const handleUpdatePassword = async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
+  if (!currentUser?.id) return;
+  setIsLoading(true);
+  try {
+    // Now currentPassword and newPassword are correctly referenced!
+    await dbService.updateAccountPassword(currentUser.id, currentPassword, newPassword);
+    
+    const secureUserSession = { ...currentUser, must_change_password: false };
+    setCurrentUser(secureUserSession);
+    localStorage.setItem('debter_v1_current_user', JSON.stringify(secureUserSession));
+  } catch (err: any) {
+    throw err; // Crucial: lets the modal catch it and show an inline error
+  } finally {
+    setIsLoading(false);
+  }
+};
   // =========================================================================
   // --- DERIVED MEMOIZED TRANSFORMATION PIPELINES ---
   // =========================================================================

@@ -72,9 +72,9 @@ export function Navigation({
       <button
         type="button"
         onClick={onFeedbackClick}
-        className="pointer-events-auto bg-slate-950 text-white hover:bg-slate-900 h-11 px-3.5 rounded-full shadow-xl border border-slate-800 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer group mr-1"
+        className="pointer-events-auto bg-slate-950 text-white hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 h-11 px-3.5 rounded-full shadow-xl border border-slate-800 dark:border-slate-700/80 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer group mr-1"
       >
-        <MessageSquare className="w-4 h-4 text-[#1a5fb4] stroke-[2.5]" />
+        <MessageSquare className="w-4 h-4 text-[#1a5fb4] dark:text-blue-500 stroke-[2.5]" />
         <span className={`text-[11px] font-black tracking-wider transition-all duration-300 overflow-hidden whitespace-nowrap ${
           isFeedbackExpanded ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100'
         }`}>
@@ -85,7 +85,7 @@ export function Navigation({
       {/* =================================================================
           2. FLOATING BAR DOCK CONTEXT
           ================================================================= */}
-      <nav className="w-full max-w-md mx-auto px-3 py-3 pointer-events-auto flex justify-between items-center relative gap-1 bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200/80 shadow-[0_16px_36px_-12px_rgba(0,0,0,0.16)]">
+      <nav className="w-full max-w-md mx-auto px-3 py-3 pointer-events-auto flex justify-between items-center relative gap-1 bg-white/95 dark:bg-slate-950/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_16px_36px_-12px_rgba(0,0,0,0.16)] dark:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.5)] transition-colors">
         
         {/* DASHBOARD */}
         {isManagementScope && (
@@ -93,12 +93,12 @@ export function Navigation({
             type="button"
             onClick={() => handleTabTransition('dashboard')} 
             className={`flex flex-col items-center gap-1.5 flex-1 py-1 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer relative ${
-              activeTab === 'dashboard' ? 'text-[#1a5fb4]' : 'text-slate-400 hover:text-slate-600'
+              activeTab === 'dashboard' ? 'text-[#1a5fb4] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <LayoutDashboard className={`w-[19px] h-[19px] transition-transform ${activeTab === 'dashboard' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
             <span className="text-[10px] font-black tracking-wider uppercase">{t.dashboard || 'Dashboard'}</span>
-            {activeTab === 'dashboard' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4]" />}
+            {activeTab === 'dashboard' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4] dark:bg-blue-400" />}
           </button>
         )}
 
@@ -110,12 +110,12 @@ export function Navigation({
         >
           <div className={`p-2.5 rounded-xl transition-all active:scale-90 flex items-center justify-center ${
             activeTab === 'entry' 
-              ? 'bg-[#1a5fb4] text-white shadow-md shadow-[#1a5fb4]/20 scale-105' 
-              : 'bg-slate-50 text-slate-500 border border-slate-200/60 group-hover:text-slate-700 group-hover:bg-slate-100'
+              ? 'bg-[#1a5fb4] dark:bg-blue-600 text-white shadow-md shadow-[#1a5fb4]/20 dark:shadow-blue-600/20 scale-105' 
+              : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800/60 group-hover:text-slate-700 group-hover:dark:text-slate-200 group-hover:bg-slate-100 group-hover:dark:bg-slate-800'
           }`}>
             <Plus className="w-[18px] h-[18px] stroke-[3]" />
           </div>
-          <span className={`text-[10px] font-black tracking-wider uppercase mt-1 transition-colors ${activeTab === 'entry' ? 'text-[#1a5fb4]' : 'text-slate-400'}`}>
+          <span className={`text-[10px] font-black tracking-wider uppercase mt-1 transition-colors ${activeTab === 'entry' ? 'text-[#1a5fb4] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>
             {t.salesEntry || 'Entry'}
           </span>
         </button>
@@ -125,12 +125,12 @@ export function Navigation({
           type="button"
           onClick={() => handleTabTransition('ledger')} 
           className={`flex flex-col items-center gap-1.5 flex-1 py-1 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer relative ${
-            activeTab === 'ledger' ? 'text-[#1a5fb4]' : 'text-slate-400 hover:text-slate-600'
+            activeTab === 'ledger' ? 'text-[#1a5fb4] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
-        >
+          >
           <BookOpen className={`w-[19px] h-[19px] transition-transform ${activeTab === 'ledger' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
           <span className="text-[10px] font-black tracking-wider uppercase">{t.ledger || 'Ledger'}</span>
-          {activeTab === 'ledger' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4]" />}
+          {activeTab === 'ledger' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4] dark:bg-blue-400" />}
         </button>
 
         {/* INVENTORY */}
@@ -138,12 +138,12 @@ export function Navigation({
           type="button"
           onClick={() => handleTabTransition('inventory')} 
           className={`flex flex-col items-center gap-1.5 flex-1 py-1 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer relative ${
-            activeTab === 'inventory' ? 'text-[#1a5fb4]' : 'text-slate-400 hover:text-slate-600'
+            activeTab === 'inventory' ? 'text-[#1a5fb4] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Layers className={`w-[19px] h-[19px] transition-transform ${activeTab === 'inventory' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
           <span className="text-[10px] font-black tracking-wider uppercase">{t.inventory || 'Inventory'}</span>
-          {activeTab === 'inventory' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4]" />}
+          {activeTab === 'inventory' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4] dark:bg-blue-400" />}
         </button>
 
         {/* ADMIN */}
@@ -152,12 +152,12 @@ export function Navigation({
             type="button"
             onClick={() => handleTabTransition('admin')} 
             className={`flex flex-col items-center gap-1.5 flex-1 py-1 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer relative ${
-              activeTab === 'admin' ? 'text-[#1a5fb4]' : 'text-slate-400 hover:text-slate-600'
+              activeTab === 'admin' ? 'text-[#1a5fb4] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <Shield className={`w-[19px] h-[19px] transition-transform ${activeTab === 'admin' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
             <span className="text-[10px] font-black tracking-wider uppercase">{t.adminTab || 'Admin'}</span>
-            {activeTab === 'admin' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4]" />}
+            {activeTab === 'admin' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4] dark:bg-blue-400" />}
           </button>
         )}
         

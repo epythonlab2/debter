@@ -23,10 +23,13 @@ export function MetaPanel({ currentUser, users, t }: MetaPanelProps) {
   // Cascade resolution hierarchy path layout: Parent Context -> Current Shop -> System Baseline
   const displayName = creator?.businessName || currentUser.businessName || "Esale retail system";
   
-  // Format the user role safely to lowercase
+  // Format the user role safely to title case
   const displayRole = currentUser.role 
-    ? String(currentUser.role).replace('_', ' ').toLowerCase() 
-    : 'guest';
+  ? String(currentUser.role)
+      .replace('_', ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+  : 'Guest';
 
   return (
     // --- MAIN META CONTAINER BANNER BLOCK ---
