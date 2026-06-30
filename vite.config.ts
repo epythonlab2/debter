@@ -25,5 +25,28 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true
-  }
+  },
+
+  build: {
+    chunkSizeWarningLimit: 800, // Raises threshold slightly to reflect functional dashboard weights
+    rolldownOptions: {
+      output: {
+        codeSplitting: true, // Dynamically segment entry points
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            // Isolate Lucide icons because it scales with administrative interfaces
+            if (id.includes("lucide-react")) {
+              return "vendor-icons";
+            }
+            // Isolate core rendering engines
+            if (id.includes("react") || id.includes("react-dom")) {
+              return "vendor-react-core";
+            }
+            // Fallback chunk for all other isolated vendor packages
+            return "vendor-utilities";
+          }
+        },
+      },
+    },
+  },
 });

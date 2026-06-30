@@ -201,7 +201,7 @@ export default function RecordSaleTab({
                 if (val !== "custom" && val !== "") {
                   const found = items.find(i => String(i.id) === String(val));
                   if (found && found.default_price) {
-                    setSalePrice(0);
+                    setSalePrice('');
                   } else {
                     setSalePrice("");
                   }

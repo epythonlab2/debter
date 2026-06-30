@@ -454,8 +454,7 @@ export const dbService = {
     
     return (data || []).map(u => ({
       id: u.id,
-      full_name: u.full_name,
-      fullName: u.full_name,            
+      full_name: u.full_name,           
       identifier: u.identifier,
       email: u.email,
       role: u.role,
@@ -643,18 +642,15 @@ export const dbService = {
     // 3. Construct and map data state directly back to the app UI structures
     return {
       id: updatedUser.id,
-      full_name: updatedUser.full_name,
-      fullName: updatedUser.full_name,            
+      full_name: updatedUser.full_name,           
       identifier: updatedUser.identifier,
       email: updatedUser.email,
       role: updatedUser.role,
       shop_id: updatedUser.shop_id,
       businessName: updatedUser.business_name || '', 
-      business_name: updatedUser.business_name || '',
       location: data.location.trim(), // 🟢 Directly returns the updated text to avoid showing blank
       approved: updatedUser.approved,
       createdBy: updatedUser.created_by,
-      created_by: updatedUser.created_by,
       password: updatedUser.password,
       must_change_password: !!updatedUser.must_change_password
     };

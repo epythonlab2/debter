@@ -40,7 +40,6 @@ import CustomToast from './components/common/CustomToast';
  * ==========================================
  */
 const DeleteConfirmModal = lazy(() => import('./components/modals/DeleteConfirmModal').then(m => ({ default: m.DeleteConfirmModal })));
-const ShopModal          = lazy(() => import('./components/modals/ShopModal').then(m => ({ default: m.ShopModal })));
 const SettleDubeModal    = lazy(() => import('./components/modals/SettleDubeModal').then(m => ({ default: m.SettleDubeModal })));
 const SimpleFeedbackForm = lazy(() => import('./components/layout/SimpleFeedbackForm').then(m => ({ default: m.SimpleFeedbackForm })));
 
@@ -217,10 +216,11 @@ function MainDashboardApp() {
           setLang={setLang}
           currentUser={safeDb.currentUser}
           handleLogout={salesEngine.handleLogout}
-          onUpdateProfile={db.handleUpdateProfile || db.updateProfile || (async (data) => console.log(data))}
-          onUpdatePassword={db.handleUpdatePassword || db.updatePassword || (async (data) => console.log(data))}
+          onUpdateProfile={db.handleUpdateProfile }
+          onUpdatePassword={db.handleUpdatePassword}
           t={t}
         />
+        
 
         <MetaPanel currentUser={safeDb.currentUser} users={safeDb.users} t={t}/>
 
@@ -256,6 +256,8 @@ function MainDashboardApp() {
                   {salesEngine.activeTab === 'entry' && (
                     <RecordSaleTab
                       {...salesEngine.forms}
+                      paymentMethod={salesEngine.forms.paymentMethod as any} // 🟢 Type mismatch correction override
+                      setPaymentMethod={salesEngine.forms.setPaymentMethod as any}
                       saleQty={Number(salesEngine.forms.saleQty) || 0}
                       activeShopItems={salesEngine.activeShopItems ?? []}
                       items={safeDb.items}
@@ -283,23 +285,22 @@ function MainDashboardApp() {
                   )}
 
                   {salesEngine.activeTab === 'admin' && (
-                    <AdminTab
-                      {...salesEngine}             
-                      {...salesEngine.forms}        
-                      currentUser={safeDb.currentUser}
-                      shops={filteredShops}          
-                      users={filteredUsers}        
-                      pageSize={adminPageSize}       
-                      onPageSizeChange={setAdminPageSize} 
-                      onSearchChange={setAdminSearch}
-                      triggerDeleteConfirm={salesEngine.triggerDeleteConfirm}
-                      salesName={salesEngine.salesName}
-                      setSalesName={salesEngine.setSalesName}
-                      handleRegisterSalesperson={salesEngine.handleRegisterSalesperson} 
-                      t={t}
-                      lang={lang}
-                    />
-                  )}
+		  <AdminTab
+		    {...salesEngine}             
+		    {...salesEngine.forms}        
+		    currentUser={safeDb.currentUser}
+		    selectedShopFilter={salesEngine.selectedShopFilter} 
+		    shops={db.shops || []}          
+		    pageSize={adminPageSize}       
+		    onPageSizeChange={setAdminPageSize} 
+		    onSearchChange={setAdminSearch}
+		    salesName={salesEngine.salesName}
+		    setSalesName={salesEngine.setSalesName}
+		    handleRegisterSalesperson={salesEngine.handleRegisterSalesperson} 
+		    t={t}
+		    lang={lang}
+		  />
+		)}
                 </>
               )}
             </Suspense>
@@ -313,21 +314,6 @@ function MainDashboardApp() {
             onConfirm={salesEngine.executeDelete}
             t={t}
             lang={lang}
-          />
-
-          <ShopModal
-            isOpen={salesEngine.shopModal?.isOpen ?? false}
-            mode={salesEngine.shopModal?.mode ?? 'create'}
-            onClose={() => salesEngine.setShopModal({ isOpen: false, mode: 'create', data: null })}
-            onSubmit={salesEngine.handleSaveShop}
-            newShopName={salesEngine.forms.newShopName}
-            setNewShopName={salesEngine.forms.setNewShopName}
-            newShopLocation={salesEngine.forms.newShopLocation}
-            setNewShopLocation={salesEngine.forms.setNewShopLocation}
-            newShopOwner={salesEngine.forms.newShopOwner}
-            setNewShopOwner={salesEngine.forms.setNewShopOwner}
-            potentialOwners={salesEngine.potentialOwners} 
-            t={t}
           />
 
           <SettleDubeModal 
