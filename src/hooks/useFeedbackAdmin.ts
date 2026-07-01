@@ -16,23 +16,31 @@ export interface AdminFeedbackLog {
   submissionCount?: number;
 }
 
+// Global singletons to share a single Supabase channel connection across multiple component instances
 let globalFeedbackChannel: RealtimeChannel | null = null;
 const globalCallbacks = new Set<() => void>();
 
 export function useFeedbackAdmin() {
+  // State buckets for managing pagination and performance
   const [allLogs, setAllLogs] = useState<AdminFeedbackLog[]>([]);
   const [displayedLogs, setDisplayedLogs] = useState<AdminFeedbackLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isFetchingMore, setIsFetchingMore] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   
+  // Filtering and Searching parameters
   const [filterType, setFilterType] = useState<'all' | 'repeaters' | 'archived'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const ITEMS_PER_PAGE = 10;
-  const pageRef = useRef(1);
+  const pageRef = useRef<number>(1);
+  const isMounted = useRef<boolean>(true);
 
-  const processFeedbackMetrics = useCallback((rawLogs: any[]) => {
+  /**
+   * Evaluates user behavior frequency patterns based on total systemic records.
+   * Calculates how many times a unique user has submitted feedback entries.
+   */
+  const processFeedbackMetrics = useCallback((rawLogs: AdminFeedbackLog[]): AdminFeedbackLog[] => {
     const userFrequencyMap = rawLogs.reduce((acc: Record<string, number>, curr) => {
       if (curr.userId) {
         acc[curr.userId] = (acc[curr.userId] || 0) + 1;
@@ -46,67 +54,105 @@ export function useFeedbackAdmin() {
     }));
   }, []);
 
-  // Compute filters safely above pagination hooks to protect your temporal layout states
+  /**
+   * Computes filtered and queried data sets safely in memory before applying pagination loops.
+   */
   const filteredAndSearchedLogs = useMemo(() => {
+    const lowerQuery = searchQuery.trim().toLowerCase();
+
     return allLogs.filter(log => {
-      const matchesSearch = 
-        (log.fullName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (log.feedback?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (log.businessName?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+      const matchesSearch = !lowerQuery ||
+        (log.fullName?.toLowerCase() || '').includes(lowerQuery) ||
+        (log.feedback?.toLowerCase() || '').includes(lowerQuery) ||
+        (log.businessName?.toLowerCase() || '').includes(lowerQuery);
       
       if (!matchesSearch) return false;
       if (filterType === 'archived') return log.isArchived === true;
       if (log.isArchived === true) return false;
-      if (filterType === 'repeaters') return log.submissionCount && log.submissionCount > 2;
+      if (filterType === 'repeaters') return !!log.submissionCount && log.submissionCount > 2;
       
       return true;
     });
   }, [allLogs, filterType, searchQuery]);
 
+  /**
+   * Fetches full administration audit data logs from persistence layer.
+   * @param isBackground - If true, performs a silent background fetch without showing the global loader
+   */
   const fetchLogs = useCallback(async (isBackground = false) => {
     if (!isBackground) setIsLoading(true);
     try {
       const data = await dbService.fetchUserFeedbackLogs();
-      setAllLogs(processFeedbackMetrics(data as AdminFeedbackLog[]));
+      if (!isMounted.current) return;
+
+      const processedLogs = processFeedbackMetrics((data || []) as AdminFeedbackLog[]);
+      setAllLogs(processedLogs);
+
+      // Calculates initial notification quantities from active datastore data sets
+      if (!isBackground) {
+        const initialUnread = processedLogs.filter(log => !log.isArchived).length;
+        setUnreadCount(initialUnread);
+      }
     } catch (err) {
-      console.error("Failed fetching admin logs:", err);
+      console.error("Failed fetching admin logs within custom hook:", err);
     } finally {
-      if (!isBackground) setIsLoading(false);
+      if (isMounted.current && !isBackground) {
+        setIsLoading(false);
+      }
     }
   }, [processFeedbackMetrics]);
 
+  // Sync current fetch references to shield asynchronous processing closures from stale state data
   const fetchLogsRef = useRef(fetchLogs);
   useEffect(() => {
     fetchLogsRef.current = fetchLogs;
   }, [fetchLogs]);
 
+  /**
+   * Appends the next segment of memory logs to the displayed user workspace array view.
+   */
   const loadMoreItems = useCallback(() => {
     if (isFetchingMore || displayedLogs.length >= filteredAndSearchedLogs.length) return;
     
     setIsFetchingMore(true);
-    setTimeout(() => {
+    
+    // Tiny processing macro-task separation to smooth UI frame drop risks during heavy filtering shifts
+    const timer = setTimeout(() => {
+      if (!isMounted.current) return;
       const nextPage = pageRef.current + 1;
       const newSlice = filteredAndSearchedLogs.slice(0, nextPage * ITEMS_PER_PAGE);
       setDisplayedLogs(newSlice);
       pageRef.current = nextPage;
       setIsFetchingMore(false);
     }, 200);
+
+    return () => clearTimeout(timer);
   }, [isFetchingMore, displayedLogs.length, filteredAndSearchedLogs]);
 
+  /**
+   * Optimistically updates systemic records and syncs with datastore mutations.
+   */
   const archiveFeedback = useCallback(async (feedbackId: string) => {
-    // Optimistic UI update
+    // Optimistic UI updates
     setAllLogs(prev => 
       prev.map(log => log.feedbackId === feedbackId ? { ...log, isArchived: true } : log)
     );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+
     try {
       await dbService.archiveUserFeedback(feedbackId);
     } catch (err) {
       console.error("Failed executing archive mutation parameters:", err);
+      // Revert logic loop safely triggerable via baseline hard refresh
       fetchLogsRef.current(true); 
     }
   }, []);
 
+  /**
+   * Component mount and realtime channel tracking engine configuration.
+   */
   useEffect(() => {
+    isMounted.current = true;
     fetchLogsRef.current(false);
 
     const handleInsertNotification = () => {
@@ -116,17 +162,24 @@ export function useFeedbackAdmin() {
 
     globalCallbacks.add(handleInsertNotification);
 
+    // Singleton implementation to guard WebSocket channels against connection overflow
     if (!globalFeedbackChannel) {
       globalFeedbackChannel = supabase
         .channel('shared-admin-feedback-stream')
-        .on('postgres_changes', { event: 'INSERT', table: 'feedback', schema: 'public' }, () => {
-          globalCallbacks.forEach(cb => cb());
-        })
+        .on(
+          'postgres_changes', 
+          { event: 'INSERT', table: 'feedback', schema: 'public' }, 
+          () => {
+            globalCallbacks.forEach(cb => cb());
+          }
+        )
         .subscribe();
     }
 
     return () => {
+      isMounted.current = false;
       globalCallbacks.delete(handleInsertNotification);
+      
       if (globalCallbacks.size === 0 && globalFeedbackChannel) {
         supabase.removeChannel(globalFeedbackChannel);
         globalFeedbackChannel = null;
@@ -134,6 +187,9 @@ export function useFeedbackAdmin() {
     };
   }, []);
 
+  /**
+   * Synchronizes user filter application changes with visual view arrays.
+   */
   useEffect(() => {
     pageRef.current = 1;
     setDisplayedLogs(filteredAndSearchedLogs.slice(0, ITEMS_PER_PAGE));

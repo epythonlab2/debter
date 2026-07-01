@@ -58,7 +58,7 @@ export function SimpleFeedbackForm({ isOpen, onClose, currentUser, t, onSubmit }
               <MessageSquare className="w-4 h-4 text-[#1a5fb4]" />
               {t.feedbackTitle}
             </h3>
-            <p className="text-[10px] font-medium text-slate-500 mt-1 uppercase tracking-wide">
+            <p className="text-[10px] font-medium text-slate-500 mt-1 tracking-wide">
               {t.feedbackSubtitle}
             </p>
           </div>
@@ -78,7 +78,7 @@ export function SimpleFeedbackForm({ isOpen, onClose, currentUser, t, onSubmit }
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <h4 className="font-medium text-white text-sm">{t.feedbackSuccessTitle}</h4>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase font-medium tracking-wide">
+              <p className="text-[10px] text-slate-500 mt-1 font-medium tracking-wide">
                 {t.feedbackSuccessSubtitle}
               </p>
             </div>

@@ -300,7 +300,7 @@ export default function AdminTab(props: AdminTabProps) {
           className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/80 transition-all cursor-pointer active:scale-95"
         >
           <ArrowLeft className="w-4 h-4" />
-          {t.backToAdminDesk || "ወደ ማስተዳደሪያው ይመለሱ"}
+          {t.backToAdminDesk}
         </button>
         <FeedbackDashboard t={t} />
       </div>
@@ -319,14 +319,14 @@ export default function AdminTab(props: AdminTabProps) {
           <div className="space-y-0.5">
             <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-widest">
               {currentRole === "super_admin" 
-                ? (t.systemControlMatrix || "የስርዓት መቆጣጠሪያ ማትሪክስ") 
-                : (t.branchControlDesk || "የቅርንጫፍ መቆጣጠሪያ ጠረጴዛ")
+                ? (t.systemControlMatrix || 'System Control Matrix') 
+                : (t.branchControlDesk)
               }
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
               {currentRole === "super_admin" 
-                ? (t.adjustTenantStates || "ባለብዙ ሱቅ አካባቢ ሁኔታዎችን ያስተካክሉ") 
-                : (t.manageLocalStaff || "የቅርንጫፍ ሰራተኞችን ምዝገባ እና ፍቃድ ያስተዳድሩ")
+                ? (t.adjustTenantStates) 
+                : (t.manageLocalStaff)
               }
             </p>
           </div>
@@ -340,7 +340,7 @@ export default function AdminTab(props: AdminTabProps) {
                 style={{ backgroundColor: '#1a5fb4' }}
               >
                 <UserPlus className="w-4 h-4" />
-                <span>{t.registerSalesperson || 'አዲስ ሰራተኛ መዝግብ'}</span>
+                <span>{t.registerSalesperson}</span>
               </button>
             )}
 
@@ -351,7 +351,7 @@ export default function AdminTab(props: AdminTabProps) {
                 className="flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-xs font-bold tracking-wider transition-all bg-amber-600 hover:bg-amber-700 active:scale-95 cursor-pointer"
               >
                 <Megaphone className="w-4 h-4" />
-                <span>{t.sendBroadcast || 'መልዕክት አስተላልፍ'}</span>
+                <span>{t.sendBroadcast}</span>
               </button>
             )}
 
@@ -362,12 +362,11 @@ export default function AdminTab(props: AdminTabProps) {
                 className="relative flex items-center justify-center gap-2.5 px-4 py-2.5 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 tracking-wider transition-all cursor-pointer active:scale-95"
               >
                 <MessageSquare className="w-4 h-4" style={{ color: '#1a5fb4' }} />
-                <span>{t.userFeedbackHub || "የተጠቃሚዎች አስተያየት ማዕከል"}</span>
+                <span>{t.feedback}</span>
                 
                 {unreadCount > 0 && (
-                  <span className="flex h-2 w-2 relative ml-0.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                  <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-black text-white bg-rose-500 dark:bg-rose-600 rounded-full shadow-sm shadow-rose-500/20 animate-in fade-in zoom-in-75 duration-200 tabular-nums">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -395,7 +394,7 @@ export default function AdminTab(props: AdminTabProps) {
               className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${userSegmentTab === 'active' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200/50' : 'text-slate-400'}`}
             >
               <Flame className="w-3.5 h-3.5" />
-              {t.active || "ንቁ አካውንቶች"} ({categorizedSegments.activeUsers.length})
+              {t.active} ({categorizedSegments.activeUsers.length})
             </button>
             <button
               type="button"
@@ -403,7 +402,7 @@ export default function AdminTab(props: AdminTabProps) {
               className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${userSegmentTab === 'new' ? 'bg-blue-50 dark:bg-blue-950/40 text-[#1a5fb4]' : 'text-slate-400'}`}
             >
               <Clock className="w-3.5 h-3.5" />
-              {t.new || "አዳዲስ የመጡ"} ({categorizedSegments.newUsers.length})
+              {t.new } ({categorizedSegments.newUsers.length})
             </button>
             <button
               type="button"
@@ -411,7 +410,7 @@ export default function AdminTab(props: AdminTabProps) {
               className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${userSegmentTab === 'inactive' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200/50' : 'text-slate-400'}`}
             >
               <ShieldOff className="w-3.5 h-3.5" />
-              {t.dormant || "ያልተነቃቁ (Dormant)"} ({categorizedSegments.inactiveUsers.length})
+              {t.dormant} ({categorizedSegments.inactiveUsers.length})
             </button>
           </div>
 
@@ -536,11 +535,11 @@ export default function AdminTab(props: AdminTabProps) {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="space-y-1.5 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
-                  {t.confirmDeletionTitle || "ተጠቃሚ አካውንት አጥፋ"}
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-wider">
+                  {t.confirmDeletionTitle}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                  {t.deleteAccountInfo || "ይህንን የተጠቃሚ መገለጫ (profile) ማጥፋት እንደሚፈልጉ እርግጠኛ ነዎት? ይህ ድርጊት አካውንቱን ከ Supabase ላይ በቋሚነት ያጠፋዋል።"}
+                  {t.deleteAccountInfo}
                 </p>
               </div>
             </div>
@@ -563,7 +562,7 @@ export default function AdminTab(props: AdminTabProps) {
                 {isDeletingSingle && (
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 )}
-                <span>{t.deleteAccount || "አካውንት አጥፋ"}</span>
+                <span>{t.deleteAccount}</span>
               </button>
             </div>
           </div>
@@ -579,8 +578,8 @@ export default function AdminTab(props: AdminTabProps) {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="space-y-1.5 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
-                  {t.batchDeleteInactive || "የጅምላ ማጥፊያ ማትሪክስ"}
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-wider">
+                  {t.batchDeleteInactive}
                 </h3>
                 <p 
                   className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed"
@@ -596,7 +595,7 @@ export default function AdminTab(props: AdminTabProps) {
                 onClick={() => setPendingBatchDeleteIds(null)}
                 className="px-4 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 border border-slate-200/40 dark:border-slate-700/60 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               >
-                {t.cancelBtn || "አንሳ"}
+                {t.cancelBtn}
               </button>
               <button
                 type="button"
@@ -607,7 +606,7 @@ export default function AdminTab(props: AdminTabProps) {
                 {isDeletingBatch && (
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 )}
-                <span>{t.wipeSelected || "የተመረጡትን አጥፋ"}</span>
+                <span>{t.wipeSelected}</span>
               </button>
             </div>
           </div>

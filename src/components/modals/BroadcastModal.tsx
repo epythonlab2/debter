@@ -35,11 +35,11 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
               <Megaphone className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100">
-                {t.globalBroadcastEngine || "Global Broadcast Engine"}
+              <h3 className="text-xs font-bold tracking-widest text-slate-800 dark:text-slate-100">
+                {t.globalBroadcastEngine}
               </h3>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
-                {t.pushRealTimeAlerts || "Push real-time system alert terminal packs"}
+                {t.pushRealTimeAlerts}
               </p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
             form.reset();
             setStatusMessage({
               type: 'success',
-              text: t.broadcastSuccess || "Real-time broadcast pushed successfully!"
+              text: t.broadcastSuccess
             });
 
             setTimeout(() => {
@@ -102,14 +102,14 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
             console.error("Failed to distribute real-time notification:", err);
             setStatusMessage({
               type: 'error',
-              text: t.broadcastError || "Failed to distribute notification package. Please try again."
+              text: t.broadcastError
             });
             setIsSubmitting(false);
           }
         }} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {t.announcementMessage || "Announcement Message"}
+            <label className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              {t.announcementMessage}
             </label>
             <textarea
               name="broadcastText"
@@ -122,13 +122,13 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {t.alertPriorityLevel || "Alert Priority Level"}
+            <label className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              {t.alertPriorityLevel}
             </label>
             <select 
               name="severity" 
               disabled={isSubmitting}
-              className="w-full text-xs font-bold uppercase bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:border-[#1a5fb4] dark:focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all disabled:opacity-60"
+              className="w-full text-xs font-bold bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:border-[#1a5fb4] dark:focus:border-[#1a5fb4] focus:ring-4 focus:ring-[#1a5fb4]/10 transition-all disabled:opacity-60"
             >
                 <option value="info" className="dark:bg-slate-800">Info Accent (Blue)</option>
 		<option value="warning" className="dark:bg-slate-800">Warning Alert (Amber)</option>
@@ -141,19 +141,19 @@ export default function BroadcastModal({ isOpen, onClose, onSendBroadcast, t = {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold tracking-wider transition-all active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              {t.cancelBtn || "Cancel"}
+              {t.cancelBtn}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-[#1a5fb4] hover:bg-[#154b91] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-[#1a5fb4] hover:bg-[#154b91] text-white rounded-xl text-xs font-bold tracking-wider transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (
                 <span>Pushing...</span>
               ) : (
-                <span>{t.transmitPushAlert || "Transmit Push Alert"}</span>
+                <span>{t.transmitPushAlert}</span>
               )}
             </button>
           </div>
