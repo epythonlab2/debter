@@ -125,10 +125,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // --- AUTOMATED BACKGROUND CLOUD NETWORK SYNC PIPELINE ---
   // =========================================================================
 
-  /**
-   * Dispatches asynchronous aggregation pipelines fetching transactions and items.
-   * Reinforced with runtime parameters to safely prevent hook state desynchronization.
-   */
   const syncCloudDatabases = async (
     userSession: UserProfile | null = currentUser, 
     forcedFilter?: string
@@ -222,15 +218,30 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       if (localSession) {
         try {
           const parsedUser = JSON.parse(localSession);
+
+          // 1. Core local storage check: If stored session data marks account as unapproved, reject immediately
+          if (parsedUser && (parsedUser.approved === false || parsedUser.is_approve === false)) {
+            localStorage.removeItem('debter_v1_current_user');
+            setCurrentUser(null);
+            setLoadingPipeline(false);
+            return;
+          }
+
           const { data: freshDbUser, error } = await supabase
             .from('users')
-            .select(`*, shops (
-                location
-              )`)
+            .select(`*, shops (location)`)
             .eq('id', parsedUser.id)
             .maybeSingle();
 
+          // 2. CRITICAL PROTECTION INTERACTION: Catch if database administrative approval dropped
           if (freshDbUser && !error) {
+            if (freshDbUser.approved === false || freshDbUser.is_approve === false) {
+              localStorage.removeItem('debter_v1_current_user');
+              setCurrentUser(null);
+              setLoadingPipeline(false);
+              return; // Terminate execution immediately to stop dashboard access
+            }
+
             activeSession = {
               id: freshDbUser.id,
               full_name: freshDbUser.full_name,
@@ -244,6 +255,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
               createdBy: freshDbUser.created_by,
               location: freshDbUser.shops?.location
             };
+            
             localStorage.setItem('debter_v1_current_user', JSON.stringify(activeSession));
             setCurrentUser(activeSession);
             
@@ -251,19 +263,27 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
               setActiveTab('entry');
             }
           } else {
-            activeSession = parsedUser;
-            setCurrentUser(parsedUser);
-            if (parsedUser && parsedUser.role === 'sales') {
-              setActiveTab('entry');
+            // 3. SECURE FALLBACK INTEGRATION: If the network is flaky, evaluate cached user validation parameter flags
+            if (parsedUser && (parsedUser.approved === true || parsedUser.role === 'super_admin')) {
+              activeSession = parsedUser;
+              setCurrentUser(parsedUser);
+              if (parsedUser.role === 'sales') {
+                setActiveTab('entry');
+              }
+            } else {
+              // Clear cache if data parameters are corrupt or ambiguous
+              localStorage.removeItem('debter_v1_current_user');
+              setCurrentUser(null);
             }
           }
-        } catch {
+        } catch (err) {
+          console.error("Hydration guard structural validation failure:", err);
+          localStorage.removeItem('debter_v1_current_user');
           setCurrentUser(null);
         }
       }
       
       setLoadingPipeline(false);
-      // Safe execution passing direct variables to escape async render boundaries
       if (activeSession) {
         await syncCloudDatabases(activeSession, filterRef.current);
       }
@@ -349,7 +369,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       localStorage.setItem('debter_v1_dube', JSON.stringify(updatedDubeArray));
     }
 
-    // Flawless baseline visual field cleanup
     setSelectedItemId('');
     setSalePrice('');
     setSaleQty('1');
@@ -493,6 +512,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
 
   const handleLogout = () => {
     localStorage.removeItem('debter_v1_current_user');
+    setCurrentUser(null);
     window.location.reload();
   };
 
@@ -506,38 +526,36 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   };
   
   const handleUpdateProfile = async (data: { fullName: string; shopName: string; email: string; location: string }) => {
-  if (!currentUser?.id) return;
-  setIsLoading(true);
-  try {
-    const updatedUser = await dbService.updateUserProfile(currentUser.id, data);
-    setCurrentUser(updatedUser);
-    localStorage.setItem('debter_v1_current_user', JSON.stringify(updatedUser));
-    await syncCloudDatabases(updatedUser);
-    // Removed triggerToast from here so it doesn't show a global toast
-  } catch (err: any) {
-    // Removed error triggerToast
-    throw err; // Crucial: lets the modal catch it and show an inline error
-  } finally {
-    setIsLoading(false);
-  }
-};
+    if (!currentUser?.id) return;
+    setIsLoading(true);
+    try {
+      const updatedUser = await dbService.updateUserProfile(currentUser.id, data);
+      setCurrentUser(updatedUser);
+      localStorage.setItem('debter_v1_current_user', JSON.stringify(updatedUser));
+      await syncCloudDatabases(updatedUser);
+    } catch (err: any) {
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-const handleUpdatePassword = async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
-  if (!currentUser?.id) return;
-  setIsLoading(true);
-  try {
-    // Now currentPassword and newPassword are correctly referenced!
-    await dbService.updateAccountPassword(currentUser.id, currentPassword, newPassword);
-    
-    const secureUserSession = { ...currentUser, must_change_password: false };
-    setCurrentUser(secureUserSession);
-    localStorage.setItem('debter_v1_current_user', JSON.stringify(secureUserSession));
-  } catch (err: any) {
-    throw err; // Crucial: lets the modal catch it and show an inline error
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const handleUpdatePassword = async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
+    if (!currentUser?.id) return;
+    setIsLoading(true);
+    try {
+      await dbService.updateAccountPassword(currentUser.id, currentPassword, newPassword);
+      
+      const secureUserSession = { ...currentUser, must_change_password: false };
+      setCurrentUser(secureUserSession);
+      localStorage.setItem('debter_v1_current_user', JSON.stringify(secureUserSession));
+    } catch (err: any) {
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // =========================================================================
   // --- DERIVED MEMOIZED TRANSFORMATION PIPELINES ---
   // =========================================================================

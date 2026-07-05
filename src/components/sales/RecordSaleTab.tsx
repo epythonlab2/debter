@@ -1,6 +1,6 @@
 // src/components/RecordSaleTab.tsx
-import React, { useMemo, useState } from 'react';
-import { Plus, Info, ShoppingBag, CreditCard, User, Phone, Calendar, Loader2 } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Plus, Info, ShoppingBag, CreditCard, User, Phone, Calendar, Loader2, Search, Check, ChevronDown } from 'lucide-react';
 import { SalesTranslation } from '../../types/sales';
 import { ItemRecord } from '../../types/inventory';
 
@@ -57,6 +57,22 @@ export default function RecordSaleTab({
 }: RecordSaleTabProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Search & Combobox Dropdown Visibility States
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close the floating search menu when clicking outside the target frame
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const frequentItems = useMemo(() => {
     return [...activeShopItems]
@@ -67,6 +83,21 @@ export default function RecordSaleTab({
       })
       .slice(0, 4);
   }, [activeShopItems]);
+
+  // Compute text label matching the active ID choice
+  const selectedItemLabel = useMemo(() => {
+    if (selectedItemId === "custom") return `✨ ${t.unregisteredSale || "Custom Item"}`;
+    if (!selectedItemId) return `-- ${t.chooseItemPlaceholder || "Choose Product"} --`;
+    const found = items.find(i => String(i.id) === String(selectedItemId));
+    return found ? found.item_name : `-- ${t.chooseItemPlaceholder || "Choose Product"} --`;
+  }, [selectedItemId, items, t]);
+
+  // Filter items matching input queries down dynamically
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return items;
+    return items.filter(i => i.item_name.toLowerCase().includes(query));
+  }, [items, searchQuery]);
 
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +114,24 @@ export default function RecordSaleTab({
     }
   };
 
+  const selectProductItem = (val: string) => {
+    setSelectedItemId(val);
+    setIsOpen(false);
+    setSearchQuery(''); // Reset search input box text
+
+    if (val !== "custom" && val !== "") {
+      const found = items.find(i => String(i.id) === String(val));
+      if (found && found.default_price) {
+        setSalePrice('');
+      } else {
+        setSalePrice("");
+      }
+    } else {
+      setSalePrice("");
+      setCustomItemName("");
+    }
+  };
+
   const handlePaymentMethodChange = (method: PaymentMethodType) => {
     setPaymentMethod(method);
     if (method !== 'dube') {
@@ -91,7 +140,6 @@ export default function RecordSaleTab({
     }
   };
 
-  // Adjusted theme variables to eliminate radioactive glare backgrounds in Dark Mode
   const activeTabTheme = useMemo(() => {
     switch (paymentMethod) {
       case 'cash':
@@ -103,9 +151,9 @@ export default function RecordSaleTab({
         };
       case 'transfer':
         return {
-          bg: 'bg-[#1a5fb4]',
+          bg: 'bg-white dark:bg-[#1a5fb4]/20 border-[#1a5fb4] dark:border-blue-500/30',
           border: 'border-[#154b91] dark:border-blue-500/20',
-          text: 'text-white dark:text-blue-400 font-semibold',
+          text: 'text-[#1a5fb4] dark:text-blue-400 font-semibold',
           transform: 'translateX(calc(100% + 4px))'
         };
       case 'dube':
@@ -184,49 +232,90 @@ export default function RecordSaleTab({
       {/* SECTION 2: MAIN LEDGER ENTRY FORM */}
       <form onSubmit={onFormSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 p-4.5 shadow-2xs space-y-4">
         
-        {/* Dropdown Product Selector Field */}
-        <div className="space-y-1.5">
+        {/* Searchable Combobox Product Dropdown Section */}
+        <div className="space-y-1.5" ref={dropdownRef}>
           <label className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 tracking-wide">
             <ShoppingBag className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 stroke-[2]" />
             {t.selectItem || "Select Product"}
           </label>
-          <div className="relative group">
-            <select 
-              value={selectedItemId}
+          
+          <div className="relative">
+            {/* Main Input Trigger Base */}
+            <button
+              type="button"
               disabled={isSubmitting}
-              required
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedItemId(val);
-                if (val !== "custom" && val !== "") {
-                  const found = items.find(i => String(i.id) === String(val));
-                  if (found && found.default_price) {
-                    setSalePrice('');
-                  } else {
-                    setSalePrice("");
-                  }
-                } else {
-                  setSalePrice("");
-                  setCustomItemName("");
-                }
-              }}
-              className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 outline-none text-sm bg-slate-50 dark:bg-slate-950/40 focus:bg-white focus:dark:bg-slate-950 focus:border-[#1a5fb4] focus:dark:border-blue-500 focus:ring-4 focus:ring-[#1a5fb4]/10 focus:dark:ring-blue-500/10 font-normal text-slate-700 dark:text-slate-200 appearance-none transition-all disabled:opacity-60 truncate cursor-pointer"
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 outline-none text-sm bg-slate-50 dark:bg-slate-950/40 focus:bg-white focus:dark:bg-slate-950 focus:border-[#1a5fb4] focus:dark:border-blue-500 text-left text-slate-700 dark:text-slate-200 transition-all disabled:opacity-60 truncate flex justify-between items-center cursor-pointer"
             >
-              <option value="" className="dark:bg-slate-950">-- {t.chooseItemPlaceholder || "Choose Product"} --</option>
-              {items.map((i) => (
-                <option key={i.id} value={i.id} className="dark:bg-slate-950">
-                  {`
-                    ${i.item_name} (${t.stock || "Stock"}: ${Number(i.quantity || 0).toLocaleString()} ${t.pcs || "Pcs"})
-                  `}
-                </option>
-              ))}
-              <option value="custom" className="text-[#1a5fb4] dark:text-blue-400 font-medium dark:bg-slate-950">✨ + {t.unregisteredSale || "Custom Item"}</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400 dark:text-slate-500">
-              <svg className="fill-current h-4 w-4 opacity-60 stroke-[1.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
+              <span className="truncate">{selectedItemLabel}</span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transform transition-transform duration-150 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Frame Context Panel Overlay */}
+            {isOpen && (
+              <div className="absolute z-50 w-full mt-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-64">
+                {/* Search Input field inline box */}
+                <div className="p-2 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950 flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 ml-1.5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    autoFocus
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={`${t.itemNamePlaceholder || "Search variant"}...`}
+                    className="w-full bg-transparent text-sm outline-none font-normal text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  />
+                </div>
+
+                {/* Filter Options List */}
+                <div className="overflow-y-auto divide-y divide-slate-50 dark:divide-slate-900/60 flex-1 scrollbar-thin">
+                  {/* Option Entry: Custom Item Fallback Fixed Header */}
+                  <button
+                    type="button"
+                    onClick={() => selectProductItem("custom")}
+                    className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors ${
+                      selectedItemId === 'custom' 
+                        ? 'bg-[#1a5fb4]/5 dark:bg-blue-500/10 text-[#1a5fb4] dark:text-blue-400 font-medium' 
+                        : 'text-[#1a5fb4] dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 font-medium'
+                    }`}
+                  >
+                    <span>✨ + {t.unregisteredSale || "Custom Item"}</span>
+                    {selectedItemId === 'custom' && <Check className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />}
+                  </button>
+
+                  {/* Standard SKU Iterations */}
+                  {filteredItems.length === 0 ? (
+                    <div className="p-4 text-xs text-center text-slate-400 dark:text-slate-500">
+                      No matching products found
+                    </div>
+                  ) : (
+                    filteredItems.map((i) => {
+                      const isItemActive = String(i.id) === String(selectedItemId);
+                      return (
+                        <button
+                          key={i.id}
+                          type="button"
+                          onClick={() => selectProductItem(i.id)}
+                          className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors ${
+                            isItemActive 
+                              ? 'bg-[#1a5fb4]/5 dark:bg-blue-500/10 text-[#1a5fb4] dark:text-blue-400 font-medium' 
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/50'
+                          }`}
+                        >
+                          <div className="flex flex-col truncate pr-2">
+                            <span className="truncate">{i.item_name}</span>
+                            <span className="text-xxs text-slate-400 dark:text-slate-500 font-normal mt-0.5">
+                              {t.stock || "Stock"}: {Number(i.quantity || 0).toLocaleString()} {t.pcs || "Pcs"}
+                            </span>
+                          </div>
+                          {isItemActive && <Check className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400 shrink-0" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -175,8 +175,8 @@ export function useInventory({
       return matchesSearch && matchesShop;
     });
 
-    return filtered.slice(0, pageSize);
-  }, [items, inventorySearch, selectedShopFilter, pageSize]);
+    return filtered;
+  }, [items, inventorySearch, selectedShopFilter]);
 
   /**
    * Isoradial evaluation of items owned directly by the logged-in storefront model context.

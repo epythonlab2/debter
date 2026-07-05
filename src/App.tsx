@@ -2,6 +2,7 @@
 import React, { useMemo, useState, Suspense, lazy, useEffect } from 'react';
 import { translations } from './constants/translations';
 import { MessageSquare } from 'lucide-react';
+import { supabase } from './utils/supabaseClient'; // 🟢 Direct client reference for live security gate syncs
 
 /** * ==========================================
  * THEME CONTEXT SYSTEM (V4 Integrated Strategy)
@@ -95,6 +96,49 @@ function MainDashboardApp() {
     return () => window.removeEventListener('scroll', handleScrollVisibility);
   }, []);
 
+  // 🛡️ LIVE SECURITY CHECK GATE: Terminate stale cache instantly if account was disabled
+  useEffect(() => {
+    const verifyActiveSessionState = async () => {
+      const cachedSession = localStorage.getItem('debter_v1_current_user');
+      if (!cachedSession) return;
+
+      try {
+        const parsedUser = JSON.parse(cachedSession);
+        if (!parsedUser?.id) return;
+
+        // Fetch user parameters directly from backend production state
+        const { data: serverUser, error } = await supabase
+          .from('users')
+          .select('approved, role')
+          .eq('id', parsedUser.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('[Session Sync Error]: Failed to reach live validation gate.', error.message);
+          return;
+        }
+
+        // If the workspace profile is unapproved/disabled, clear storage frames instantly
+        if (serverUser && serverUser.approved === false && serverUser.role !== 'super_admin') {
+          console.warn('[Forced Security Terminate]: Intercepted disabled pipeline payload session.');
+          localStorage.removeItem('debter_v1_current_user');
+          
+          if (db.setCurrentUser) {
+            db.setCurrentUser(null);
+          } else {
+            window.location.reload(); // Hard fallback layout pop back to login
+          }
+        }
+      } catch (e) {
+        console.error('[Session Recovery Guard Panic]:', e);
+      }
+    };
+
+    if (!db.loadingPipeline && !splashVisible) {
+      verifyActiveSessionState();
+    }
+  }, [db.loadingPipeline, splashVisible, db.currentUser]);
+
   const t = useMemo(() => translations?.[lang] ?? {}, [lang]);
 
   const safeDb = useMemo(() => ({
@@ -186,7 +230,6 @@ function MainDashboardApp() {
   if (!safeDb.currentUser) {
     return (
       <div className="min-h-screen bg-slate-50/90 text-slate-500 dark:bg-[#070d19] flex items-center justify-center p-4 transition-colors duration-200">
-      
         <div className="max-w-md w-full">
           <Auth
             onAuthSuccess={(user) => db.setCurrentUser(user)}
@@ -204,9 +247,6 @@ function MainDashboardApp() {
 
   return (
     <NotificationProvider>
-      {/* Integrated dynamic styling with system theme parameters. 
-        Auto-switches layout backgrounds gracefully on selection changes.
-      */}
       <div className="min-h-screen bg-slate-50/96 text-slate-800 dark:bg-[#070d19] dark:text-slate-100 flex flex-col transition-colors duration-200">
         <GlobalBroadcastBanner t={t} />
         <CustomToast toast={toastData} onClose={salesEngine.clearToast} />
@@ -236,27 +276,28 @@ function MainDashboardApp() {
                 />
               ) : (
                 <>
-                  {salesEngine.activeTab === 'dashboard' && 
-                  (safeDb.currentUser.role === 'super_admin' || safeDb.currentUser.role === 'admin') && (
+                  {salesEngine.activeTab === 'dashboard' && (
                     <DashboardTab
                       currentUser={safeDb.currentUser}
-                      shops={safeDb.shops}
+                      onFetchShopsFromAPI={async (query: string) => {
+                        salesEngine.setShopQuery(query);
+                        return salesEngine.shops; 
+                      }}
                       selectedShopFilter={salesEngine.selectedShopFilter}
                       setSelectedShopFilter={salesEngine.setSelectedShopFilter}
                       analytics={salesEngine.analytics}
                       dailyGoal={safeDb.dailyGoal}
                       handleUpdateGoal={db.handleUpdateGoal}
                       t={t}
-                      lang={lang}
                       timeFilter={salesEngine.timeFilter}
-                      setTimeFilter={salesEngine.setTimeFilter}
+                      setTimeFilter={salesEngine.setTimeFilter} // 🟢 Fixed: properly explicitly bound to engine scope
                     />
                   )}
 
                   {salesEngine.activeTab === 'entry' && (
                     <RecordSaleTab
                       {...salesEngine.forms}
-                      paymentMethod={salesEngine.forms.paymentMethod as any} // 🟢 Type mismatch correction override
+                      paymentMethod={salesEngine.forms.paymentMethod as any}
                       setPaymentMethod={salesEngine.forms.setPaymentMethod as any}
                       saleQty={Number(salesEngine.forms.saleQty) || 0}
                       activeShopItems={salesEngine.activeShopItems ?? []}
@@ -285,22 +326,22 @@ function MainDashboardApp() {
                   )}
 
                   {salesEngine.activeTab === 'admin' && (
-		  <AdminTab
-		    {...salesEngine}             
-		    {...salesEngine.forms}        
-		    currentUser={safeDb.currentUser}
-		    selectedShopFilter={salesEngine.selectedShopFilter} 
-		    shops={db.shops || []}          
-		    pageSize={adminPageSize}       
-		    onPageSizeChange={setAdminPageSize} 
-		    onSearchChange={setAdminSearch}
-		    salesName={salesEngine.salesName}
-		    setSalesName={salesEngine.setSalesName}
-		    handleRegisterSalesperson={salesEngine.handleRegisterSalesperson} 
-		    t={t}
-		    lang={lang}
-		  />
-		)}
+                    <AdminTab
+                      {...salesEngine}             
+                      {...salesEngine.forms}        
+                      currentUser={safeDb.currentUser}
+                      selectedShopFilter={salesEngine.selectedShopFilter} 
+                      shops={db.shops || []}          
+                      pageSize={adminPageSize}       
+                      onPageSizeChange={setAdminPageSize} 
+                      onSearchChange={setAdminSearch}
+                      salesName={salesEngine.salesName}
+                      setSalesName={salesEngine.setSalesName}
+                      handleRegisterSalesperson={salesEngine.handleRegisterSalesperson} 
+                      t={t}
+                      lang={lang}
+                    />
+                  )}
                 </>
               )}
             </Suspense>
@@ -350,10 +391,6 @@ function MainDashboardApp() {
   );
 }
 
-/**
- * Unified application root initialization container.
- * Sits at the absolute peak of the node tree hierarchy to feed context downwards.
- */
 export default function App() {
   return (
     <ThemeProvider>

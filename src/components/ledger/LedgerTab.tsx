@@ -95,27 +95,33 @@ export default function LedgerTab({
     return partitionedDubeRecords.slice(0, visibleDubeCount);
   }, [partitionedDubeRecords, visibleDubeCount]);
 
+  // 🟢 FIXED: Safe conditional observer configuration checks
   useEffect(() => {
     const observerOptions = { root: null, rootMargin: '200px', threshold: 0.1 };
+    let salesObserver: IntersectionObserver | null = null;
+    let dubeObserver: IntersectionObserver | null = null;
 
-    const salesObserver = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && groupedSales.length > visibleSalesGroups) {
-        setVisibleSalesGroups((prev) => prev + ITEMS_PER_PAGE);
-      }
-    }, observerOptions);
+    if (ledgerToggle === "sales" && salesSentinelRef.current) {
+      salesObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && groupedSales.length > visibleSalesGroups) {
+          setVisibleSalesGroups((prev) => prev + ITEMS_PER_PAGE);
+        }
+      }, observerOptions);
+      salesObserver.observe(salesSentinelRef.current);
+    }
 
-    const dubeObserver = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && partitionedDubeRecords.length > visibleDubeCount) {
-        setVisibleDubeCount((prev) => prev + ITEMS_PER_PAGE);
-      }
-    }, observerOptions);
-
-    if (salesSentinelRef.current) salesObserver.observe(salesSentinelRef.current);
-    if (dubeSentinelRef.current) dubeObserver.observe(dubeSentinelRef.current);
+    if (ledgerToggle === "dube" && dubeSentinelRef.current) {
+      dubeObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && partitionedDubeRecords.length > visibleDubeCount) {
+          setVisibleDubeCount((prev) => prev + ITEMS_PER_PAGE);
+        }
+      }, observerOptions);
+      dubeObserver.observe(dubeSentinelRef.current);
+    }
 
     return () => {
-      salesObserver.disconnect();
-      dubeObserver.disconnect();
+      if (salesObserver) salesObserver.disconnect();
+      if (dubeObserver) dubeObserver.disconnect();
     };
   }, [groupedSales.length, visibleSalesGroups, partitionedDubeRecords.length, visibleDubeCount, ledgerToggle]);
 

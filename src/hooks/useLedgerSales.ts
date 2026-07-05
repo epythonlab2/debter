@@ -108,7 +108,7 @@ export function useLedgerSales({
       }
 
       const resolvedItemName = (itemMap.get(String(s.item_id)) || s.item_name || '').toLowerCase();
-      const customItemName = (s.customItemName || s.custom_item_name || '').toLowerCase();
+      const customItemName = (s.customItemName || s.item_name || '').toLowerCase();
       const buyerName = (s.buyerName || s.buyer_name || '').toLowerCase();
       const buyerPhone = String(s.buyerPhone || s.buyer_phone || '');
       const salespersonName = (s.recorded_by?.full_name || s.recorded_by_full_name || '').toLowerCase();
@@ -128,7 +128,6 @@ export function useLedgerSales({
       const resolvedName = itemMap.get(String(sale.item_id)) || 
                            sale.item_name || 
                            sale.customItemName || 
-                           sale.custom_item_name || 
                            t.unregItem;
 
       if (!groups[dateStr]) {

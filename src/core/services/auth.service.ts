@@ -38,6 +38,11 @@ export async function registerUser(profile: any) {
     throw new Error('Registration Rejected: Full Name property missing or blank.');
   }
 
+  // Determine explicit fallback for explicit approval property mapping variance
+  const structuralApprovalState = profile.approved !== undefined 
+    ? profile.approved 
+    : (profile.is_approved !== undefined ? profile.is_approved : false);
+
   // 2. Register the user profile, linking it to the created shop
   const { error: userError } = await supabase
     .from('users')
@@ -51,7 +56,7 @@ export async function registerUser(profile: any) {
         role: profile.role || 'owner',
         shop_id: assignedShopId || profile.shop_id || null, 
         business_name: resolvedBusinessName,       
-        approved: profile.approved !== undefined ? profile.approved : false,
+        approved: structuralApprovalState,
         created_by: resolvedCreatedBy
       }
     ]);
@@ -72,19 +77,22 @@ export async function registerUser(profile: any) {
 /**
  * Authenticates credentials against the users table and resolves shop details relationally.
  * Accepts localization context parameters to respond with formal native messaging layers.
+ * 
+ * 🛡️ HARDENED VALIDATION: Prevents both camelCase and snake_case structural bypass leaks.
  */
 export async function loginUser(
   identifier: string, 
   password: string, 
   lang: 'en' | 'am' = 'en'
 ): Promise<UserProfile> {
-  // 1. Fetch core user info
+  
+  // We explicitly cast the RPC response structure to tell TypeScript what fields exist
   const { data: user, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('identifier', identifier)
-    .eq('password', password)
-    .maybeSingle();
+    .rpc('verify_and_migrate_user', {
+      p_identifier: identifier.trim(),
+      p_input_password: password
+    })
+    .maybeSingle() as { data: any; error: any };
 
   // 🛑 INVALID CREDENTIALS GATES
   if (userError || !user) {
@@ -94,8 +102,11 @@ export async function loginUser(
     throw new Error(invalidMsg);
   }
 
+  // 🛡️ ACCORDING TO DATA MODEL VARIATION: Evaluate both schema versions of "approved"
+  const backendApprovalStatus = user.approved !== undefined ? user.approved : user.is_approved;
+
   // 🛑 ACCOUNT DEACTIVATION / APPROVAL GUARD
-  if (user.approved === false) {
+  if (backendApprovalStatus === false && user.role !== 'super_admin') {
     const restrictedMsg = lang === 'am'
       ? 'የመለያዎ መብት ተገድቧል ወይም አልነቃም። እባክዎ መለያዎን ለማስነሳት በቴሌግራም ያግኙን፡ https://t.me/debter16'
       : 'Your account access has been restricted or deactivated. Please contact us on Telegram for immediate activation: https://t.me/debter16';
@@ -117,7 +128,7 @@ export async function loginUser(
     }
   }
 
-  // 🛡️ Normalization Layer
+  // 🛡️ Normalization Layer — guarantees explicit formatting consistency across context listeners
   return {
     id: user.id,
     identifier: user.identifier,
@@ -128,7 +139,7 @@ export async function loginUser(
     shop_id: user.shop_id,
     businessName: user.business_name || null, 
     location: resolvedLocation,              
-    approved: user.approved,
+    approved: !!backendApprovalStatus, // Force strict boolean truth assessment
     createdBy: user.created_by || null,
     must_change_password: !!user.must_change_password       
   };

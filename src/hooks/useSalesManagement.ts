@@ -25,20 +25,26 @@ interface UseSalesManagementProps {
 export function useSalesManagement(props: UseSalesManagementProps) {
   const { lang, t, currentUser, setShops, items, setItems, dailyGoal } = props;
 
+  // =========================================================================
+  // --- STATE CORE CORE STACK ---
+  // =========================================================================
   const [sales, setSales] = useState<Sale[]>([]);
   const [dubeRecords, setDubeRecords] = useState<DubeRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>(currentUser?.role === 'sales' ? 'entry' : 'dashboard');
   const [selectedShopFilter, setSelectedShopFilter] = useState<string>('all');
+  const [shopQuery, setShopQuery] = useState<string>('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>('today');
-  
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     isOpen: boolean;
     type: 'item' | 'shop' | 'sale' | 'user' | null;
     targetId: string | null;
   }>({ isOpen: false, type: null, targetId: null });
 
+  // =========================================================================
+  // --- SYSTEM NOTIFICATION UTILITIES ---
+  // =========================================================================
   const triggerToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ id: Date.now(), message, type });
   }, []);
@@ -47,23 +53,16 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     setToast(null);
   }, []);
 
+  // =========================================================================
+  // --- ROLE AND ACCESS LEVEL SANITIZATION ---
+  // =========================================================================
   const normalizedShopFilter = useMemo(() => {
     return currentUser?.role === 'super_admin' ? selectedShopFilter : 'all';
-  }, [currentUser, selectedShopFilter]);
+  }, [currentUser?.role, selectedShopFilter]);
 
   // =========================================================================
-  // --- SUB-HOOK MOUNTING NODES ---
+  // --- REMOTE DATABASE ORCHESTRATION PIPELINES ---
   // =========================================================================
-
-  // 🟢 Initialize Admin Slice early so syncCloudDatabases can access its refresh method
-  const adminSlice = useAdmin({
-    currentUser,
-    selectedShopFilter,
-    syncCloudDatabases: () => syncCloudDatabases(), 
-    triggerToast,
-    t,
-  });
-
   const syncCloudDatabases = useCallback(async () => {
     if (!currentUser) return;
     setIsLoading(true);
@@ -85,7 +84,6 @@ export function useSalesManagement(props: UseSalesManagementProps) {
       setSales(cloudSales || []);
       setDubeRecords(cloudDube || []);
 
-      // 🟢 Cleanly trigger the PostgreSQL view synchronization instead of manual state settings
       if (isSuperAdmin || currentUser.role === 'admin') {
         await adminSlice.syncCohortsView();
       }
@@ -94,13 +92,35 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, selectedShopFilter, setShops, setItems, triggerToast, adminSlice.syncCohortsView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.role, currentUser?.shop_id, selectedShopFilter, setShops, setItems, triggerToast]);
 
+  // Handle core synchronization on mount or filter switches
   useEffect(() => { 
     syncCloudDatabases(); 
   }, [syncCloudDatabases]);
 
-  // Role-based data isolation mechanics
+  // =========================================================================
+  // --- CHILD CORE SLICE MANAGEMENT INJECTIONS ---
+  // =========================================================================
+  const adminSlice = useAdmin({
+    currentUser,
+    selectedShopFilter,
+    syncCloudDatabases, 
+    triggerToast,
+    t,
+  });
+
+  // =========================================================================
+  // --- PERFORMANCE METRIC INVENTORY FILTER ENGINES ---
+  // =========================================================================
+  const filteredShops = useMemo(() => {
+    const baseShops = props.shops || [];
+    const sanitizedQuery = shopQuery.trim().toLowerCase();
+    if (!sanitizedQuery) return baseShops;
+    return baseShops.filter(shop => shop?.name?.toLowerCase().includes(sanitizedQuery));
+  }, [props.shops, shopQuery]);
+
   const filteredSalesForMetrics = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'sales') {
@@ -128,6 +148,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     sales: filteredSalesForMetrics,
     dubeRecords: filteredDubeForMetrics,
     selectedShopFilter: normalizedShopFilter,
+    shopQuery,
     dailyGoal,
     timeFilter,
     t,
@@ -152,13 +173,16 @@ export function useSalesManagement(props: UseSalesManagementProps) {
 
   const shopSlice = useShop({
     currentUser, 
-    users: adminSlice.users as unknown as UserProfile[], // ✨ Fixed structural type mismatch here
+    users: adminSlice.users as unknown as UserProfile[], 
     syncCloudDatabases, 
     triggerToast, 
     t, 
     lang
   });
 
+  // =========================================================================
+  // --- TRANSACTION RECORD CLEANUP CONTROLLERS ---
+  // =========================================================================
   const executeDelete = useCallback(async () => {
     const { type, targetId } = deleteConfirmModal;
     if (!type || !targetId) return;
@@ -185,6 +209,9 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     setDeleteConfirmModal({ isOpen: true, type, targetId: id });
   }, []);
 
+  // =========================================================================
+  // --- INTERACTION ELEMENT HANDLERS ---
+  // =========================================================================
   const handleQuickSelect = useCallback((item: Item) => {
     salesSlice.setSelectedItemId(String(item.id)); 
     salesSlice.setSalePrice('');
@@ -202,17 +229,22 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     window.location.reload();
   }, [triggerToast]);
 
+  // Optimized O(N) linear parsing matrix for tracking metric distributions
   const topFrequentShopItems = useMemo(() => {
     const baseItems = inventorySlice.activeShopItems || [];
     if (!baseItems.length) return [];
-    const salesFrequencyMap: Record<string, number> = {};
-    for (let i = 0; i < filteredSalesForMetrics.length; i++) {
-      const itemId = filteredSalesForMetrics[i].item_id;
-      if (itemId) {
-        salesFrequencyMap[String(itemId)] = (salesFrequencyMap[String(itemId)] || 0) + 1;
+    
+    const salesFrequencyMap = new Map<string, number>();
+    filteredSalesForMetrics.forEach(sale => {
+      if (sale.item_id) {
+        const key = String(sale.item_id);
+        salesFrequencyMap.set(key, (salesFrequencyMap.get(key) || 0) + 1);
       }
-    }
-    return [...baseItems].sort((a, b) => (salesFrequencyMap[String(b.id)] || 0) - (salesFrequencyMap[String(a.id)] || 0)).slice(0, 4);
+    });
+
+    return [...baseItems]
+      .sort((a, b) => (salesFrequencyMap.get(String(b.id)) || 0) - (salesFrequencyMap.get(String(a.id)) || 0))
+      .slice(0, 4);
   }, [inventorySlice.activeShopItems, filteredSalesForMetrics]);
 
   const unifiedHandleSettleDube = useCallback(async () => {
@@ -228,6 +260,9 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     }
   }, [ledgerSlice, salesSlice, syncCloudDatabases, triggerToast, t]);
 
+  // =========================================================================
+  // --- MEMOIZED UI TRANSACTION MUTATION STATE MAPS ---
+  // =========================================================================
   const memoizedForms = useMemo(() => ({
     selectedItemId: salesSlice.selectedItemId, setSelectedItemId: salesSlice.setSelectedItemId,
     salePrice: salesSlice.salePrice, setSalePrice: salesSlice.setSalePrice,
@@ -239,7 +274,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     saleDate: salesSlice.saleDate, setSaleDate: salesSlice.setSaleDate,
     itemName: inventorySlice.itemName, setItemName: inventorySlice.setItemName,
     newInvPrice: inventorySlice.newInvPrice, setNewInvPrice: inventorySlice.setNewInvPrice,
-    itemQuantity: inventorySlice.itemQuantity, setItemQuantity: inventorySlice.itemQuantity,
+    itemQuantity: inventorySlice.itemQuantity, setItemQuantity: inventorySlice.setItemQuantity,
     salesName: shopSlice.salesName, setSalesName: shopSlice.setSalesName,
     newShopName: shopSlice.newShopName, setNewShopName: shopSlice.newShopName,
     newShopLocation: shopSlice.newShopLocation, setNewShopLocation: shopSlice.newShopLocation,
@@ -261,7 +296,11 @@ export function useSalesManagement(props: UseSalesManagementProps) {
   
   const { activeShopItems: _droppedInvItems, ...cleanInventorySlice } = inventorySlice;
 
-  useEffect(() => {
+  // Enforce structural routing changes down to active viewport screens
+ // =========================================================================
+// --- ROLE-BASED ACCESS CONTROL VIEW PORT ROUTING ROUTERS ---
+// =========================================================================
+useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'sales') {
         setActiveTab('entry');
@@ -271,6 +310,9 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     }
   }, [currentUser]);
 
+  // =========================================================================
+  // --- UNIFIED EXECUTION EXPORTS ---
+  // =========================================================================
   return {
     ...cleanInventorySlice,
     ...salesSlice,   
@@ -281,7 +323,10 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     sales: filteredSalesForMetrics,
     items, 
     dubeRecords: filteredDubeForMetrics, 
-    shops: props.shops, 
+    shops: filteredShops, 
+    shopQuery,
+    setShopQuery,
+
     isLoading,
     activeTab, 
     setActiveTab,

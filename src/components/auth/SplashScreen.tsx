@@ -49,21 +49,20 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-between items-center p-6 bg-gradient-to-b from-[#070d19] to-[#040810] transition-all duration-1000 ease-in-out select-none overflow-hidden font-sans text-slate-100">
+    // --- MAIN SPLASH SCREEN OVERLAY ---
+    <div className="fixed inset-0 z-50 flex flex-col justify-between items-center p-6 bg-[#021b3d] transition-all duration-1000 ease-in-out select-none overflow-hidden font-sans text-slate-100">
       
       {/* Top Status Bar Mock */}
-      <div className="w-full flex justify-between items-center text-[10px] text-gray-500 tracking-wider font-mono px-4 mt-2">
+      <div className="w-full flex justify-between items-center text-[10px] text-blue-200/40 tracking-wider font-mono px-4 mt-2">
         <span className="animate-pulse">SYS_INIT_OK</span>
-        <span>V1.0.3</span>
+        <span>V1.0.5</span>
       </div>
 
       {/* CENTER ENGINE: Branding, Core Logo, and Identity Title */}
       <div className="flex flex-col items-center justify-center flex-grow -translate-y-6">
-        <div className="relative group mb-8">
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-transparent rounded-3xl blur-xl opacity-60 scale-110" />
-          <div className="flex-shrink-0 relative">
-            <DebterIcon size="lg" />
-          </div>
+        {/* Isolated Icon Anchor (Removed all extra container wraps, borders, and shadows) */}
+        <div className="flex-shrink-0 mb-8">
+          <DebterIcon size="lg" />
         </div>
 
         <div className="space-y-3 text-center">
@@ -73,16 +72,16 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
           
           {isFirstTime ? (
             <div className="space-y-1.5 max-w-sm mx-auto">
-              <p className="text-gray-400 text-sm md:text-base font-light tracking-wide">
+              <p className="text-blue-200/80 text-sm md:text-base font-light tracking-wide">
                 Shop Daily Notebook
               </p>
               <div className="w-6 h-[1px] bg-slate-800/60 mx-auto" />
-              <p className="text-gray-400 text-sm md:text-base font-light tracking-wide">
+              <p className="text-blue-200/80 text-sm md:text-base font-light tracking-wide">
                 የዕለት ሽያጭ መመዝገቢያ ደብተር
               </p>
             </div>
           ) : (
-            <p className="text-gray-400 text-sm md:text-base font-light tracking-wide max-w-xs mx-auto">
+            <p className="text-blue-200/80 text-sm md:text-base font-light tracking-wide max-w-xs mx-auto">
               {lang === 'en' 
                 ? "Shop Daily Notebook" 
                 : "የዕለት ሽያጭ መመዝገቢያ ደብተር"}
@@ -95,16 +94,16 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
       <div className="w-full max-w-xs flex flex-col items-center gap-4 mb-8">
         <div className="w-full flex justify-between text-xs text-blue-400 font-medium px-1">
           <span className="flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin flex-shrink-0" />
-            <span className={isFirstTime ? "tracking-wide text-gray-400 font-medium" : "text-gray-400 tracking-wide"}>
+            <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin flex-shrink-0" />
+            <span className={isFirstTime ? "tracking-wide text-blue-200/70 font-medium" : "text-blue-200/70 tracking-wide"}>
               {getLoadingText()}
             </span>
           </span>
-          <span className="font-mono text-slate-300">{progress}%</span>
+          <span className="font-mono text-blue-200/80">{progress}%</span>
         </div>
 
         {/* Progress Bar Tracker */}
-        <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-gray-800/80">
+        <div className="w-full h-1.5 bg-[#021126] rounded-full overflow-hidden border border-slate-800/40">
           <div 
             className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-[#f5b700] rounded-full transition-all duration-300 ease-out" 
             style={{ width: `${progress}%` }}

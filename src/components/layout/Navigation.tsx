@@ -8,8 +8,8 @@ interface NavigationProps {
   setLedgerSearch: (search: string) => void;
   currentRole: string;
   t: any;
-  isFeedbackExpanded: boolean;   // Added
-  onFeedbackClick: () => void;   // Added
+  isFeedbackExpanded: boolean;
+  onFeedbackClick: () => void;
 }
 
 export function Navigation({ 
@@ -52,9 +52,13 @@ export function Navigation({
   }, []);
   
   const handleTabTransition = (tabTarget: string) => {
-    setActiveTab(tabTarget);
+  setActiveTab(tabTarget);
+  
+  // Only clear the ledger search string if transitioning completely away to another tab context
+  if (tabTarget !== 'ledger' && tabTarget !== 'entry') {
     setLedgerSearch('');
-  };
+  }
+};
 
   const isManagementScope = currentRole === "super_admin" || currentRole === "admin";
 
@@ -134,6 +138,7 @@ export function Navigation({
         </button>
 
         {/* INVENTORY */}
+        {isManagementScope && (
         <button 
           type="button"
           onClick={() => handleTabTransition('inventory')} 
@@ -145,6 +150,7 @@ export function Navigation({
           <span className="text-[10px] font-black tracking-wider uppercase">{t.inventory || 'Inventory'}</span>
           {activeTab === 'inventory' && <span className="absolute bottom-[-2px] w-1 h-1 rounded-full bg-[#1a5fb4] dark:bg-blue-400" />}
         </button>
+        )}
 
         {/* ADMIN */}
         {isManagementScope && (

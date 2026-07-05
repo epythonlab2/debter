@@ -239,22 +239,19 @@ export const dbService = {
     const generatedSaleId = saleData.id || crypto.randomUUID();
     const cleanMethod = (saleData.payment_method || saleData.paymentMethod || 'cash');
 
+    // 🟢 Keep ONLY the exact physical table fields present in your sales SQL definition
     const insertPayload: Record<string, any> = {
       id: generatedSaleId,
-      item_id: saleData.item_id || null,
-      quantity: saleData.quantity,
-      price_sold: saleData.price_sold,
+      item_id: saleData.item_id || null, // Links to your newly provisioned custom SKU item
+      quantity: Number(saleData.quantity),
+      price_sold: Number(saleData.price_sold),
       sale_date: saleData.sale_date,
       shop_id: saleData.shop_id,
       recorded_by: saleData.recordedBy || null,
       payment_method: cleanMethod
     };
 
-    if (saleData.custom_item_name) {
-      insertPayload.custom_item_name = saleData.custom_item_name;
-    } else if (!saleData.item_id && saleData.item_name) {
-      insertPayload.custom_item_name = saleData.item_name;
-    }
+    // 🟢 REMOVED: The custom_item_name mapping blocks that caused the schema cache crash
 
     const { error: saleErr } = await supabase
       .from("sales")
@@ -262,6 +259,7 @@ export const dbService = {
 
     if (saleErr) throw saleErr;
 
+    // --- Dube Credit Records Workflow Ledger Block ---
     if (cleanMethod.toLowerCase().trim() === "dube" && dubeData) {
       try {
         const totalAmount = Number(saleData.quantity ?? 0) * Number(saleData.price_sold ?? 0);

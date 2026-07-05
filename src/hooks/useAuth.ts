@@ -63,6 +63,15 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
     setConfirmPassword('');
   };
 
+  /**
+   * Explicitly terminates local profile sessions, wiping clean state layers
+   * inside React alongside local persistent storage frames.
+   */
+  const logout = () => {
+    localStorage.removeItem('debter_v1_current_user');
+    setCurrentUser(null);
+  };
+
   // Reset notification frames cleanly on workflow context toggle
   useEffect(() => {
     setErrorMsg('');
@@ -244,7 +253,6 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
     }
   };
   
- 
   return {
     state: {
       currentUser,
@@ -279,8 +287,8 @@ export function useAuth({ onAuthSuccess, lang }: Props) {
       handleSubmit,
       verifyUserExists,
       resetFormFields,
+      logout,
       updatePassword: handleChangePasswordSubmit,
-      
     }
   };
 }
