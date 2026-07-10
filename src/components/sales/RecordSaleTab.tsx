@@ -29,6 +29,7 @@ export interface RecordSaleTabProps {
   handleQuickSelect: (item: ItemRecord) => void;
   t: SalesTranslation;
   lang: string;
+  isSyncing?: boolean; // 🌟 Added property to trap background database replication pipelines
 }
 
 export default function RecordSaleTab({ 
@@ -53,7 +54,8 @@ export default function RecordSaleTab({
   handleRecordSale, 
   handleQuickSelect, 
   t, 
-  lang 
+  lang,
+  isSyncing = false // 🌟 Destructured with a safe fallback configuration
 }: RecordSaleTabProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +64,9 @@ export default function RecordSaleTab({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // State to retain newly typed offline custom product names across form sessions
+  const [localCustomProducts, setLocalCustomProducts] = useState<string[]>([]);
 
   // Close the floating search menu when clicking outside the target frame
   useEffect(() => {
@@ -84,40 +89,91 @@ export default function RecordSaleTab({
       .slice(0, 4);
   }, [activeShopItems]);
 
+  // Dynamically append cached custom offline items into the master selection catalogue
+  const combinedItems = useMemo(() => {
+    if (localCustomProducts.length === 0) return items;
+
+    const virtualCustomRecords: ItemRecord[] = localCustomProducts.map((name) => ({
+      id: `custom_saved_${name}`, // Deterministic prefix identifying it as a saved custom item
+      item_name: `${name} `,
+      quantity: 0,
+      default_price: 0,
+      shop_id: ''
+    }));
+
+    return [...items, ...virtualCustomRecords];
+  }, [items, localCustomProducts]);
+
   // Compute text label matching the active ID choice
   const selectedItemLabel = useMemo(() => {
     if (selectedItemId === "custom") return `✨ ${t.unregisteredSale || "Custom Item"}`;
     if (!selectedItemId) return `-- ${t.chooseItemPlaceholder || "Choose Product"} --`;
-    const found = items.find(i => String(i.id) === String(selectedItemId));
+    const found = combinedItems.find(i => String(i.id) === String(selectedItemId));
     return found ? found.item_name : `-- ${t.chooseItemPlaceholder || "Choose Product"} --`;
-  }, [selectedItemId, items, t]);
+  }, [selectedItemId, combinedItems, t]);
 
   // Filter items matching input queries down dynamically
   const filteredItems = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return items;
-    return items.filter(i => i.item_name.toLowerCase().includes(query));
-  }, [items, searchQuery]);
+    if (!query) return combinedItems;
+    return combinedItems.filter(i => i.item_name.toLowerCase().includes(query));
+  }, [combinedItems, searchQuery]);
+  
 
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
+    let originalPriceStr = salePrice;
+    if (selectedItemId !== "custom" && selectedItemId !== "") {
+      const matchingCatalogItem = combinedItems.find(i => String(i.id) === String(selectedItemId));
+      if (matchingCatalogItem && (!salePrice || String(salePrice).trim() === "" || Number(salePrice) === 0)) {
+        setSalePrice(String(matchingCatalogItem.default_price || 0));
+        originalPriceStr = String(matchingCatalogItem.default_price || 0);
+      }
+    }
+
     if (Number(saleQty) <= 0) return alert("Quantity must be 1 or more.");
-    if (Number(salePrice) < 0) return alert("Price cannot be negative.");
+    if (Number(originalPriceStr) < 0) return alert("Price cannot be negative.");
 
     try {
       setIsSubmitting(true);
+
+      // 1. Run the save pipeline completely first
       await handleRecordSale(e);
+
+      // 2. ONLY capture custom product text input *after* successful execution is delivered
+      if (selectedItemId === 'custom' && customItemName.trim()) {
+        const cleanCustomName = customItemName.trim();
+        setLocalCustomProducts(prev => {
+          if (prev.includes(cleanCustomName)) return prev; 
+          return [...prev, cleanCustomName];
+        });
+      }
+      
+      // 3. Explicitly collapse the dropdown frame context if left open
+      setIsOpen(false);
+      
+    } catch (error) {
+      console.error("Submission failed: ", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const selectProductItem = (val: string) => {
-    setSelectedItemId(val);
     setIsOpen(false);
     setSearchQuery(''); // Reset search input box text
+
+    if (String(val).startsWith("custom_saved_")) {
+      const extractedCustomName = String(val).replace("custom_saved_", "");
+      setSelectedItemId("custom");
+      setCustomItemName(extractedCustomName);
+      setSalePrice("");
+      return;
+    }
+
+    setSelectedItemId(val);
 
     if (val !== "custom" && val !== "") {
       const found = items.find(i => String(i.id) === String(val));
@@ -240,7 +296,6 @@ export default function RecordSaleTab({
           </label>
           
           <div className="relative">
-            {/* Main Input Trigger Base */}
             <button
               type="button"
               disabled={isSubmitting}
@@ -251,10 +306,8 @@ export default function RecordSaleTab({
               <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transform transition-transform duration-150 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Dropdown Frame Context Panel Overlay */}
             {isOpen && (
-              <div className="absolute z-50 w-full mt-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-64">
-                {/* Search Input field inline box */}
+              <div className="absolute z-40 w-full mt-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-64">
                 <div className="p-2 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950 flex items-center gap-2">
                   <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 ml-1.5" />
                   <input
@@ -267,9 +320,7 @@ export default function RecordSaleTab({
                   />
                 </div>
 
-                {/* Filter Options List */}
                 <div className="overflow-y-auto divide-y divide-slate-50 dark:divide-slate-900/60 flex-1 scrollbar-thin">
-                  {/* Option Entry: Custom Item Fallback Fixed Header */}
                   <button
                     type="button"
                     onClick={() => selectProductItem("custom")}
@@ -283,7 +334,6 @@ export default function RecordSaleTab({
                     {selectedItemId === 'custom' && <Check className="w-4 h-4 text-[#1a5fb4] dark:text-blue-400" />}
                   </button>
 
-                  {/* Standard SKU Iterations */}
                   {filteredItems.length === 0 ? (
                     <div className="p-4 text-xs text-center text-slate-400 dark:text-slate-500">
                       No matching products found
@@ -435,6 +485,12 @@ export default function RecordSaleTab({
                 value={salePrice || ''}
                 disabled={isSubmitting}
                 onChange={(e) => setSalePrice(e.target.value)}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                onKeyDown={(e) => {
+		    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+		      e.preventDefault();
+		    }
+		  }}
                 placeholder="0"
                 className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 outline-none text-sm bg-slate-50 dark:bg-slate-950/40 font-normal text-slate-800 dark:text-slate-200 focus:bg-white focus:dark:bg-slate-950 focus:border-[#1a5fb4] focus:dark:border-blue-500 focus:ring-4 focus:ring-[#1a5fb4]/10 focus:dark:ring-blue-500/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 required
@@ -505,6 +561,30 @@ export default function RecordSaleTab({
           )}
         </button>
       </form>
+
+      {/* ========================================================================= */}
+      {/* --- 🌟 FULL SCREEN INTERACTIVE MODAL FOR DATA SYNC OVERLAYS ---          */}
+      {/* ========================================================================= */}
+      {isSyncing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in">
+          <div className="w-11/12 max-w-xs rounded-2xl bg-white dark:bg-slate-900 p-6 text-center shadow-xl border border-slate-100 dark:border-slate-800/60">
+            
+            {/* Spinning Indicator */}
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/30 text-[#1a5fb4] dark:text-blue-400 mb-4">
+              <Loader2 className="h-6 w-6 animate-spin stroke-[2.5]" />
+            </div>
+
+            {/* Translation Friendly Context Layout Labels */}
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">
+              {t.syncingTitle || "Syncing Records..."}
+            </h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[220px] mx-auto leading-normal">
+              {t.syncingSales || "Uploading transactional shifts to the remote cloud. Keep connection stable."}
+            </p>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }

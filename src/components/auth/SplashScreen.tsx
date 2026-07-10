@@ -55,7 +55,7 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
       {/* Top Status Bar Mock */}
       <div className="w-full flex justify-between items-center text-[10px] text-blue-200/40 tracking-wider font-mono px-4 mt-2">
         <span className="animate-pulse">SYS_INIT_OK</span>
-        <span>V1.0.5</span>
+        <span>V1.0.6</span>
       </div>
 
       {/* CENTER ENGINE: Branding, Core Logo, and Identity Title */}

@@ -1,4 +1,3 @@
-// src/hooks/useLocalStoragePipeline.ts
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { dbService } from '../core/services/dbService';
@@ -46,6 +45,12 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [loadingPipeline, setLoadingPipeline] = useState(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // 🟢 OFFLINE SYNCHRONIZATION TRANSACTION QUEUE STATE
+  const [offlineSalesQueue, setOfflineSalesQueue] = useState<any[]>(() => {
+    const savedQueue = localStorage.getItem('debter_v1_offline_queue');
+    return savedQueue ? JSON.parse(savedQueue) : [];
+  });
 
   // =========================================================================
   // --- UI LAYOUT FILTER & ROUTER PREFERENCE INDICATORS ---
@@ -154,10 +159,17 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         setItems(cloudItems);
         localStorage.setItem('debter_v1_items', JSON.stringify(cloudItems));
       }
+      
+      // 🟢 MERGE RECOVERY: Append pending offline local row array objects on sync returns
       if (cloudSales) {
-        setSales(cloudSales);
-        localStorage.setItem('debter_v1_sales', JSON.stringify(cloudSales));
+        const savedQueueRaw = localStorage.getItem('debter_v1_offline_queue');
+        const activeMemoryQueue = savedQueueRaw ? JSON.parse(savedQueueRaw) : [];
+        const integratedSales = [...activeMemoryQueue, ...cloudSales];
+        
+        setSales(integratedSales);
+        localStorage.setItem('debter_v1_sales', JSON.stringify(integratedSales));
       }
+      
       if (cloudDube) {
         setDubeRecords(cloudDube);
         localStorage.setItem('debter_v1_dube', JSON.stringify(cloudDube));
@@ -176,6 +188,57 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setIsLoading(false);
     }
   };
+
+  // =========================================================================
+  // --- AUTOMATED ONLINE BACKGROUND QUEUE SYNC WORKER ---
+  // =========================================================================
+  useEffect(() => {
+    const processOfflineQueue = async () => {
+      if (offlineSalesQueue.length === 0 || !navigator.onLine || isLoading) return;
+      
+      console.log("Device connectivity re-established. Processing pending local queue...");
+      const workingQueue = [...offlineSalesQueue];
+      
+      for (const pendingSale of workingQueue) {
+        try {
+          const dbPaymentMethod = pendingSale.payment_method === 'dube' ? 'dube' : 'cash';
+          const dubePayload = dbPaymentMethod === 'dube' 
+            ? { buyer_name: pendingSale.buyer_name, buyer_phone: pendingSale.buyer_phone } 
+            : undefined;
+
+          // Strip local UI metadata decoration flags before passing clean entity to backend
+          const cleanSalePayload = {
+            id: pendingSale.id,
+            item_id: pendingSale.item_id,
+            item_name: pendingSale.item_name,
+            quantity: pendingSale.quantity,
+            price_sold: pendingSale.price_sold,
+            sale_date: pendingSale.sale_date,
+            shop_id: pendingSale.shop_id,
+            payment_method: dbPaymentMethod
+          };
+
+          await dbService.insertSaleWithDube(cleanSalePayload, dubePayload);
+          
+          // Clean item out of the active running list state
+          setOfflineSalesQueue(prev => {
+            const nextQueue = prev.filter(item => item.id !== pendingSale.id);
+            localStorage.setItem('debter_v1_offline_queue', JSON.stringify(nextQueue));
+            return nextQueue;
+          });
+        } catch (err) {
+          console.error("Halting automated queue execution. Server dropped connection again:", err);
+          break;
+        }
+      }
+      await syncCloudDatabases(currentUser);
+    };
+
+    window.addEventListener('online', processOfflineQueue);
+    if (navigator.onLine) { processOfflineQueue(); }
+    
+    return () => window.removeEventListener('online', processOfflineQueue);
+  }, [offlineSalesQueue, currentUser]);
 
   // =========================================================================
   // --- INTEGRATED COMPONENT LIFECYCLE INTERCEPTORS ---
@@ -219,7 +282,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         try {
           const parsedUser = JSON.parse(localSession);
 
-          // 1. Core local storage check: If stored session data marks account as unapproved, reject immediately
           if (parsedUser && (parsedUser.approved === false || parsedUser.is_approve === false)) {
             localStorage.removeItem('debter_v1_current_user');
             setCurrentUser(null);
@@ -233,13 +295,12 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
             .eq('id', parsedUser.id)
             .maybeSingle();
 
-          // 2. CRITICAL PROTECTION INTERACTION: Catch if database administrative approval dropped
           if (freshDbUser && !error) {
             if (freshDbUser.approved === false || freshDbUser.is_approve === false) {
               localStorage.removeItem('debter_v1_current_user');
               setCurrentUser(null);
               setLoadingPipeline(false);
-              return; // Terminate execution immediately to stop dashboard access
+              return; 
             }
 
             activeSession = {
@@ -263,7 +324,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
               setActiveTab('entry');
             }
           } else {
-            // 3. SECURE FALLBACK INTEGRATION: If the network is flaky, evaluate cached user validation parameter flags
             if (parsedUser && (parsedUser.approved === true || parsedUser.role === 'super_admin')) {
               activeSession = parsedUser;
               setCurrentUser(parsedUser);
@@ -271,7 +331,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
                 setActiveTab('entry');
               }
             } else {
-              // Clear cache if data parameters are corrupt or ambiguous
               localStorage.removeItem('debter_v1_current_user');
               setCurrentUser(null);
             }
@@ -319,15 +378,31 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     localStorage.setItem('debter_v1_goal', String(newGoal));
   };
 
+  // 🟢 FIXED SECURE TRANSACTION SAVING INTERCEPTOR Engine
   const handleRecordSale = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
 
-    let finalItemName = customItemName;
-    if (selectedItemId !== 'custom') {
+    let finalItemName = customItemName.trim();
+    let computedItemId = selectedItemId;
+
+    if (!selectedItemId || selectedItemId === 'custom') {
+      computedItemId = `item-${Date.now()}`;
+      if (!finalItemName) finalItemName = "Generic Item";
+      
+      const newLocalProduct: ItemRecord = {
+        id: computedItemId,
+        item_name: finalItemName,
+        default_price: Number(salePrice) || 0,
+        shop_id: currentUser.shop_id || '',
+        quantity: Number(saleQty || 1)
+      };
+      setItems(prev => [newLocalProduct, ...prev]);
+    } else {
       const activeItem = items.find(i => String(i.id) === String(selectedItemId));
-      if (!activeItem) return;
-      finalItemName = activeItem.item_name || '';
+      if (activeItem) {
+        finalItemName = activeItem.item_name || '';
+      }
     }
 
     const dbPaymentMethod = (paymentMethod === 'dube') ? 'dube' : 'cash';
@@ -336,10 +411,10 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
 
     const salePayload = {
       id: saleId,
-      item_id: selectedItemId === 'custom' ? '' : selectedItemId,
+      item_id: computedItemId,
       item_name: finalItemName,
       quantity: numericQty,
-      price_sold: Number(salePrice),
+      price_sold: Number(salePrice) || 0,
       sale_date: saleDate,
       shop_id: currentUser.shop_id || '',
       payment_method: dbPaymentMethod
@@ -348,7 +423,16 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     const dubeBuyerName = buyerName;
     const dubeBuyerPhone = buyerPhone;
 
-    const updatedSalesArray = [salePayload, ...sales];
+    // Build immediate UI record layer complete with local filter variables
+    const localUIRecord = {
+      ...salePayload,
+      buyer_name: dubeBuyerName,
+      buyer_phone: dubeBuyerPhone,
+      is_offline_pending: true // 🟢 Secure fallback visibility flag for Ledger rows
+    };
+
+    // Commit to state arrays instantly for offline scannability
+    const updatedSalesArray = [localUIRecord, ...sales];
     setSales(updatedSalesArray);
     localStorage.setItem('debter_v1_sales', JSON.stringify(updatedSalesArray));
 
@@ -359,7 +443,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         sale_id: saleId,
         buyer_name: dubeBuyerName,
         buyer_phone: dubeBuyerPhone,
-        amount: Number(salePrice) * numericQty,
+        amount: (Number(salePrice) || 0) * numericQty,
         status: 'unpaid' as const,
         created_at: new Date().toISOString(),
         shop_id: currentUser.shop_id ?? "" 
@@ -369,6 +453,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       localStorage.setItem('debter_v1_dube', JSON.stringify(updatedDubeArray));
     }
 
+    // Wipe layout elements clean for next checkout workflow iteration
     setSelectedItemId('');
     setSalePrice('');
     setSaleQty('1');
@@ -379,6 +464,16 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     triggerToast(lang === 'en' ? "Saved offline (Pending Sync)" : "ከመስመር ውጭ ተቀምጧል!", "success");
 
     try {
+      if (!selectedItemId || selectedItemId === 'custom') {
+        await dbService.createItem({
+          id: computedItemId,
+          item_name: finalItemName,
+          default_price: Number(salePrice) || 0,
+          shop_id: currentUser.shop_id || '',
+          quantity: 100 
+        });
+      }
+
       const dubePayload = dbPaymentMethod === 'dube' 
         ? { buyer_name: dubeBuyerName, buyer_phone: dubeBuyerPhone } 
         : undefined;
@@ -388,10 +483,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       await syncCloudDatabases(currentUser);
       
     } catch (networkError: any) {
-      console.warn(
-        "Cloud insertion deferred. Operating offline mode. Payload cached successfully:", 
-        networkError.message || networkError
-      );
+      console.warn("Cloud push failed. Stashing inside persistent offline cache map queue.");
+      
+      setOfflineSalesQueue(prev => {
+        const nextQueue = [...prev, localUIRecord];
+        localStorage.setItem('debter_v1_offline_queue', JSON.stringify(nextQueue));
+        return nextQueue;
+      });
     }
   };
 

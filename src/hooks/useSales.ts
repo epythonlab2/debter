@@ -1,23 +1,15 @@
 // src/hooks/useSales.ts
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { dbService } from '../core/services/dbService';
 import { UseSalesProps, UseSalesReturn } from '../types/sales';
 
 /**
- * Custom React hook that handles retail point-of-sale (POS) interactions.
- * Bridges state bindings for data-entry forms with transactional write routines
- * across inventory items, ad-hoc custom sales, and credit tracking (Dube records).
+ * Custom React hook managing retail point-of-sale (POS) transactional mechanics.
+ * Bridges responsive frontend data-entry states with robust local/remote database mutations,
+ * handling physical inventory allocations, custom ad-hoc transactions, and credit tracking (Dube records).
  *
- * @param props - Configuration properties containing context states, master data records, and cloud sync callbacks.
- * @param props.currentUser - The active user profile context executing sales operations.
- * @param props.items - Standardized catalog of items/SKUs currently loaded into local state caches.
- * @param props.sales - Master dataset tracking historically recorded sales operations.
- * @param props.dubeRecords - Master dataset tracking credit/outstanding line-of-credit metrics.
- * @param props.selectedShopFilter - active organizational store scope filter or 'all'.
- * @param props.syncCloudDatabases - Async handler to pull fresh data states following local database changes.
- * @param props.triggerToast - Global layout notification pipeline callback.
- * @param props.t - Strongly-typed translation string mapping dictionary objects.
- * * @returns An object containing reactive input form state variables, explicit state-mutators, and execution callbacks.
+ * @param props Configurations, global shared collections, and synchronization pipelines.
+ * @returns State properties, atomic structural updates, and transaction execution handlers.
  */
 export function useSales({
   currentUser,
@@ -29,96 +21,164 @@ export function useSales({
   triggerToast,
   t
 }: UseSalesProps): UseSalesReturn {
+  // =========================================================================
+  // --- STATE CORE STACK ---
+  // =========================================================================
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [salePrice, setSalePrice] = useState<string>('');
-  // Standardized to string to match input fields & your hook's form state wrapper
-  const [saleQty, setSaleQty] = useState<string>('1');
+  const [saleQty, setSaleQty] = useState<number>(1);
   const [customItemName, setCustomItemName] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [buyerName, setBuyerName] = useState<string>('');
   const [buyerPhone, setBuyerPhone] = useState<string>('');
-  const [saleDate, setSaleDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [saleDate, setSaleDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+
+  // =========================================================================
+  // --- TRANSACTION MUTATION PIPELINES ---
+  // =========================================================================
 
   /**
-   * Event wrapper logic handling local transaction records submission parsing.
-   * Differentiates workflow logic between registered inventory SKU deductions and custom ad-hoc product logs,
-   * dynamically handles alternative payment routes, and tracks multi-step credit payload models (Dube entries).
-   *
-   * @param e - The standard DOM React Form submit event thread context wrapper.
-   * @returns A promise that resolves when the local insertions and remote cloud re-syncs conclude successfully.
+   * Evaluates, validates, and records retail transaction entries.
+   * Accommodates both standard UI submissions and offline payload sync operations.
    */
-  const handleRecordSale = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRecordSale = useCallback(async (e?: React.FormEvent, offlinePayload?: any) => {
+    if (e) e.preventDefault();
+
+    // Access Control Validation Guard
     if (!currentUser || !currentUser.shop_id || currentUser.shop_id === 'all') {
       triggerToast(t.invalidShop, "error");
       return;
     }
 
-    if (selectedItemId === 'custom' && !customItemName.trim()) {
+    // Extraction Strategy: Fall back systematically to internal state components if offline payload fields are missing
+    const activeItemId = offlinePayload 
+      ? (offlinePayload.selectedItemId || offlinePayload.item_id || (offlinePayload.item_name ? 'custom' : '')) 
+      : selectedItemId;
+
+    const activeSalePrice = offlinePayload 
+      ? (offlinePayload.salePrice !== undefined ? offlinePayload.salePrice : offlinePayload.price_sold) 
+      : salePrice;
+
+    const activeSaleQty = offlinePayload 
+      ? (offlinePayload.saleQty !== undefined ? offlinePayload.saleQty : offlinePayload.quantity) 
+      : saleQty;
+
+    const activeCustomItemName = offlinePayload ? (offlinePayload.customItemName || offlinePayload.item_name || '') : customItemName;
+    const activePaymentMethod = offlinePayload ? (offlinePayload.paymentMethod || offlinePayload.payment_method) : paymentMethod;
+    const activeBuyerName = offlinePayload ? (offlinePayload.buyerName || offlinePayload.buyer_name || '') : buyerName;
+    const activeBuyerPhone = offlinePayload ? (offlinePayload.buyerPhone || offlinePayload.buyer_phone || '') : buyerPhone;
+    const activeSaleDate = offlinePayload ? (offlinePayload.saleDate || offlinePayload.sale_date) : saleDate;
+
+    // Structural Ad-hoc Constraints Validation
+    if (activeItemId === 'custom' && !activeCustomItemName.trim()) {
       triggerToast(t.specifyItemName, "error");
       return;
     }
 
-    let finalItemName = customItemName.trim();
-    let activeItem = items.find(i => String(i.id) === String(selectedItemId));
-    if (selectedItemId !== 'custom' && activeItem) {
+    // Synchronize catalog reference mapping matching string IDs
+    let finalItemName = activeCustomItemName.trim();
+    const activeItem = items.find(i => String(i.id) === String(activeItemId));
+    if (activeItemId !== 'custom' && activeItem) {
       finalItemName = activeItem.item_name || '';
     }
 
+    // Payment Schema Normalization Strategy
     let dbPaymentMethod: 'cash' | 'transfer' | 'dube' = 'cash';
-    if (paymentMethod === 'dube') dbPaymentMethod = 'dube';
-    else if (['transfer', 'telebirr', 'bank'].includes(paymentMethod)) dbPaymentMethod = 'transfer';
+    if (activePaymentMethod === 'dube') {
+      dbPaymentMethod = 'dube';
+    } else if (['transfer', 'telebirr', 'bank'].includes(String(activePaymentMethod).toLowerCase())) {
+      dbPaymentMethod = 'transfer';
+    }
 
-    const formattedDbDate = saleDate.includes('T') ? saleDate.split('T')[0] : saleDate;
-    const dubePayload = dbPaymentMethod === 'dube' ? { buyer_name: buyerName, buyer_phone: buyerPhone } : undefined;
+    const formattedDbDate = activeSaleDate.includes('T') ? activeSaleDate.split('T')[0] : activeSaleDate;
+    const dubePayload = dbPaymentMethod === 'dube' ? { buyer_name: activeBuyerName, buyer_phone: activeBuyerPhone } : undefined;
+
+    // Sanitize numerical representations against IEEE-754 floating point drift anomalies
+    const sanitizedPrice = Math.round(Number(activeSalePrice || 0) * 100) / 100;
+    const sanitizedQty = Math.max(1, Number(activeSaleQty || 1));
 
     try {
-      if (selectedItemId === 'custom') {
+      if (activeItemId === 'custom') {
         await dbService.insertCustomSaleWithDube({
-          item_name: finalItemName, quantity: Number(saleQty), price_sold: Number(salePrice),
-          sale_date: formattedDbDate, shop_id: currentUser.shop_id, paymentMethod: dbPaymentMethod, recordedBy: currentUser.id
+          item_name: finalItemName, 
+          quantity: sanitizedQty, 
+          price_sold: sanitizedPrice,
+          sale_date: formattedDbDate, 
+          shop_id: currentUser.shop_id, 
+          paymentMethod: dbPaymentMethod, 
+          recordedBy: currentUser.id
         }, dubePayload);
       } else {
-        await dbService.insertSaleWithDube({
-          item_id: selectedItemId, quantity: Number(saleQty), price_sold: Number(salePrice),
-          sale_date: formattedDbDate, shop_id: currentUser.shop_id, paymentMethod: dbPaymentMethod, recordedBy: currentUser.id
-        }, dubePayload);
+        // 🔥 OPTIMIZATION: Process remote DB entries and stock updates in parallel
+        const mutationWorkers: Promise<any>[] = [
+          dbService.insertSaleWithDube({
+            item_id: activeItemId, 
+            quantity: sanitizedQty, 
+            price_sold: sanitizedPrice,
+            sale_date: formattedDbDate, 
+            shop_id: currentUser.shop_id, 
+            paymentMethod: dbPaymentMethod, 
+            recordedBy: currentUser.id
+          }, dubePayload)
+        ];
 
         if (activeItem) {
-          const updatedStock = Math.max(0, Number(activeItem.quantity || 0) - Number(saleQty || 1));
-          await dbService.updateItemQuantity(String(activeItem.id), updatedStock);
+          const updatedStock = Math.max(0, Number(activeItem.quantity || 0) - sanitizedQty);
+          mutationWorkers.push(dbService.updateItemQuantity(String(activeItem.id), updatedStock));
         }
+
+        await Promise.all(mutationWorkers);
       }
 
-      triggerToast(t.saleInventoryAdhoc, "success");
-      setSelectedItemId(''); setSalePrice(''); setSaleQty('1'); setCustomItemName(''); setBuyerName(''); setBuyerPhone('');
-      await syncCloudDatabases();
+      // Evict interactive form components exclusively when driving direct online interactions
+      if (!offlinePayload) {
+        triggerToast(t.saleInventoryAdhoc, "success");
+        setSelectedItemId(''); 
+        setSalePrice(''); 
+        setSaleQty(1); 
+        setCustomItemName(''); 
+        setBuyerName(''); 
+        setBuyerPhone('');
+
+        // 🔥 CRITICAL FIX: Trigger background reload asynchronously without awaiting.
+        // This instantly resolves handleRecordSale so the frontend UI can terminate its loading spinner state.
+        syncCloudDatabases().catch(err => console.error("Non-blocking background data-sync dropped:", err));
+      }
     } catch (err: any) {
-      triggerToast(err.message, "error");
+      triggerToast(err.message || "Failed to process sale mutation", "error");
+      throw err; // Escalate exception state to background thread synchronization controllers
     }
-  };
+  }, [currentUser, selectedItemId, salePrice, saleQty, customItemName, paymentMethod, buyerName, buyerPhone, saleDate, items, triggerToast, syncCloudDatabases, t]);
 
   /**
-   * Action handler targeting credit components for debt settlement.
-   * Resolves outstanding unpaid lines-of-credit balances inside local database systems.
-   *
-   * @param dubeId - The system identifier key tracking the record being processed (string UUID or incremental number integer).
-   * @returns A promise that updates the credit ledger profile and pushes downstream structural data synchronization pipelines.
+   * Resolves outstanding accounts receivable line records (Dube transactions).
    */
-  const handleSettleDube = async (dubeId: string | number) => {
+  const handleSettleDube = useCallback(async (dubeId: string | number) => {
+    if (!dubeId) return;
     try {
-      // FORCE CAST to string here to satisfy the dbService signature:
       await dbService.settleDubeDebt(String(dubeId));
       triggerToast(t.dubePaid, "success");
-      await syncCloudDatabases();
+      
+      // Let settlement metrics sync in background
+      syncCloudDatabases().catch(err => console.error("Non-blocking background sync failed:", err));
     } catch (err: any) {
-      triggerToast(err.message, "error");
+      triggerToast(err.message || "Failed to settle credit balance", "error");
     }
-  };
+  }, [syncCloudDatabases, triggerToast, t]);
 
+  // =========================================================================
+  // --- INTERFACE CONTRACT RETURN MAPS ---
+  // =========================================================================
   return {
-    selectedItemId, setSelectedItemId, salePrice, setSalePrice, saleQty, setSaleQty,
-    customItemName, setCustomItemName, paymentMethod, setPaymentMethod, buyerName, setBuyerName,
-    buyerPhone, setBuyerPhone, saleDate, setSaleDate, handleRecordSale, handleSettleDube
+    selectedItemId, setSelectedItemId,
+    salePrice, setSalePrice,
+    saleQty, setSaleQty,
+    customItemName, setCustomItemName,
+    paymentMethod, setPaymentMethod,
+    buyerName, setBuyerName,
+    buyerPhone, setBuyerPhone,
+    saleDate, setSaleDate,
+    handleRecordSale,
+    handleSettleDube
   } as any;
 }

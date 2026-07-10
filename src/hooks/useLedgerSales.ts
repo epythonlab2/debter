@@ -134,9 +134,9 @@ export function useLedgerSales({
         groups[dateStr] = { date: dateStr, total: 0, items: [] };
       }
 
-      // Robust fallback check across our Dube index mappings
+      // 🟢 OPTIMIZED STATUS EVALUATION: If marked as pending local sync, flag it explicitly as unpaid credit
       const dubeRef = dubeStatusMap.get(String(sale.id)) || dubeStatusMap.get(String(sale.dube_id));
-      const isDubeSettled = dubeRef ? dubeRef.status === 'paid' : false;
+      const isDubeSettled = sale.is_offline_pending ? false : (dubeRef ? dubeRef.status === 'paid' : false);
 
       groups[dateStr].items.push({ 
         ...sale, 
@@ -147,7 +147,7 @@ export function useLedgerSales({
       // 🟢 REVENUE TOTAL ADJUSTMENT CHECK
       const method = sale.payment_method || sale.paymentMethod;
       if (method === 'dube' && !isDubeSettled) {
-        return; // Skip accounting calculation for unpaid credit records
+        return; // Skip accounting calculation for unpaid or un-synchronized credit records
       }
 
       groups[dateStr].total += Number(sale.price_sold || 0) * Number(sale.quantity || 0);

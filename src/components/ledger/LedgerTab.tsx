@@ -283,7 +283,7 @@ export default function LedgerTab({
                                     {(() => {
                                       const fallbackName = sale.item_name || t.unregisteredItem || "Custom Item";
                                       const customNameString = (sale as any).customItemName || (sale as any).custom_item_name;
-                                      return customNameString ? `${fallbackName} (${customNameString})` : fallbackName;
+                                      return customNameString ? `${fallbackName}` : fallbackName;
                                     })()}
                                   </p>
                                   
