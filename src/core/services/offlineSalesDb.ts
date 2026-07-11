@@ -1,5 +1,5 @@
 // src/core/services/offlineSalesDb.ts
-import { PaymentMethodType } from '../../components/RecordSaleTab';
+import { PaymentMethodType } from '../../components/sales/RecordSaleTab';
 
 export interface CachedSalePayload {
   id: string; // Internal local execution identifier tag

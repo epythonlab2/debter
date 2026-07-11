@@ -58,7 +58,7 @@ export interface UseSalesReturn {
   scopedSales?: Sale[];
   
   // 1. Match the exact function name used inside your hook:
-  handleRecordSale: (e: React.FormEvent) => Promise<void>;
+  handleRecordSale: (e?: React.FormEvent, offlinePayload?: any) => Promise<void>;
   
   // 2. ADD THIS MISSING PROPERTY RIGHT HERE:
   handleSettleDube: (dubeId: string | number) => Promise<void>;

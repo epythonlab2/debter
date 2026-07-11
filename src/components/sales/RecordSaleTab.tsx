@@ -29,7 +29,7 @@ export interface RecordSaleTabProps {
   handleQuickSelect: (item: ItemRecord) => void;
   t: SalesTranslation;
   lang: string;
-  isSyncing?: boolean; // 🌟 Added property to trap background database replication pipelines
+  isSyncing?: boolean; 
 }
 
 export default function RecordSaleTab({ 
@@ -55,7 +55,7 @@ export default function RecordSaleTab({
   handleQuickSelect, 
   t, 
   lang,
-  isSyncing = false // 🌟 Destructured with a safe fallback configuration
+  isSyncing = false 
 }: RecordSaleTabProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +94,7 @@ export default function RecordSaleTab({
     if (localCustomProducts.length === 0) return items;
 
     const virtualCustomRecords: ItemRecord[] = localCustomProducts.map((name) => ({
-      id: `custom_saved_${name}`, // Deterministic prefix identifying it as a saved custom item
+      id: `custom_saved_${name}`, 
       item_name: `${name} `,
       quantity: 0,
       default_price: 0,
@@ -119,7 +119,6 @@ export default function RecordSaleTab({
     return combinedItems.filter(i => i.item_name.toLowerCase().includes(query));
   }, [combinedItems, searchQuery]);
   
-
   const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -151,7 +150,15 @@ export default function RecordSaleTab({
         });
       }
       
-      // 3. Explicitly collapse the dropdown frame context if left open
+      // 3. Reset entry fields post-success to prepare UI for next ledger transaction
+      setSelectedItemId("");
+      setSalePrice("");
+      setCustomItemName("");
+      setBuyerName("");
+      setBuyerPhone("");
+      setSaleQty(1);
+      
+      // 4. Explicitly collapse the dropdown frame context if left open
       setIsOpen(false);
       
     } catch (error) {
@@ -163,7 +170,7 @@ export default function RecordSaleTab({
 
   const selectProductItem = (val: string) => {
     setIsOpen(false);
-    setSearchQuery(''); // Reset search input box text
+    setSearchQuery(''); 
 
     if (String(val).startsWith("custom_saved_")) {
       const extractedCustomName = String(val).replace("custom_saved_", "");
@@ -178,7 +185,7 @@ export default function RecordSaleTab({
     if (val !== "custom" && val !== "") {
       const found = items.find(i => String(i.id) === String(val));
       if (found && found.default_price) {
-        setSalePrice('');
+        setSalePrice(String(found.default_price));
       } else {
         setSalePrice("");
       }
@@ -207,8 +214,8 @@ export default function RecordSaleTab({
         };
       case 'transfer':
         return {
-          bg: 'bg-white dark:bg-[#1a5fb4]/20 border-[#1a5fb4] dark:border-blue-500/30',
-          border: 'border-[#154b91] dark:border-blue-500/20',
+          bg: 'bg-white dark:bg-[#1a5fb4]/20',
+          border: 'border-[#1a5fb4] dark:border-blue-500/30',
           text: 'text-[#1a5fb4] dark:text-blue-400 font-semibold',
           transform: 'translateX(calc(100% + 4px))'
         };
@@ -371,7 +378,7 @@ export default function RecordSaleTab({
 
         {/* Dynamic Ad-hoc Custom Variant Input Block */}
         {selectedItemId === "custom" && (
-          <div className="p-3.5 bg-blue-50/30 dark:bg-blue-950/10 rounded-xl border border-dashed border-[#1a5fb4]/20 dark:border-blue-500/20 space-y-1.5 animate-fade-in">
+          <div className="p-3.5 bg-blue-50/30 dark:bg-blue-950/10 rounded-xl border border-dashed border-[#1a5fb4]/20 dark:border-blue-500/20 space-y-1.5 animate-fade-in transition-all">
             <label className="block text-xs font-medium text-[#1a5fb4] dark:text-blue-400">
               {t.itemName || "Item Name"}
             </label>
@@ -429,7 +436,7 @@ export default function RecordSaleTab({
 
         {/* Dynamic Credit/Dube Customer Profile Metadata Section */}
         {paymentMethod === "dube" && (
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-950/30 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3 animate-fade-in">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-950/30 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3 animate-fade-in transition-all">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 dark:border-slate-800/60 pb-2">
               <Info className="w-3.5 h-3.5 text-[#1a5fb4] dark:text-blue-400 shrink-0 stroke-[2]" />
               {t.dubeBuyerInfo || "Credit Customer Logistics"}
@@ -487,10 +494,10 @@ export default function RecordSaleTab({
                 onChange={(e) => setSalePrice(e.target.value)}
                 onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 onKeyDown={(e) => {
-		    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-		      e.preventDefault();
-		    }
-		  }}
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                  }
+                }}
                 placeholder="0"
                 className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 outline-none text-sm bg-slate-50 dark:bg-slate-950/40 font-normal text-slate-800 dark:text-slate-200 focus:bg-white focus:dark:bg-slate-950 focus:border-[#1a5fb4] focus:dark:border-blue-500 focus:ring-4 focus:ring-[#1a5fb4]/10 focus:dark:ring-blue-500/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 required
@@ -562,9 +569,7 @@ export default function RecordSaleTab({
         </button>
       </form>
 
-      {/* ========================================================================= */}
-      {/* --- 🌟 FULL SCREEN INTERACTIVE MODAL FOR DATA SYNC OVERLAYS ---          */}
-      {/* ========================================================================= */}
+      {/* FULL SCREEN INTERACTIVE MODAL FOR DATA SYNC OVERLAYS */}
       {isSyncing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in">
           <div className="w-11/12 max-w-xs rounded-2xl bg-white dark:bg-slate-900 p-6 text-center shadow-xl border border-slate-100 dark:border-slate-800/60">

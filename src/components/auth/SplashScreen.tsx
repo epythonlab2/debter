@@ -1,6 +1,6 @@
 // src/components/splash/SplashScreen.tsx
-import React, { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Loader2, WifiOff } from 'lucide-react';
 import { DebterIcon } from '../layout/DebterIcon';
 
 interface SplashScreenProps {
@@ -11,19 +11,34 @@ interface SplashScreenProps {
 
 /**
  * Modern Splash Screen (Bilingual Localized Edition)
- * Configured with an extended runtime duration for complete data hydration safety.
+ * Operates purely client-side via predictable local intervals to ensure UI rendering stability 
+ * even when launching completely offline or trapped behind captive network portals.
  */
 export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: SplashScreenProps) {
-  const [progress, setProgress] = React.useState(0);
+  const [progress, setProgress] = useState<number>(0);
+  const [isOnline, setIsOnline] = useState<boolean>(typeof window !== 'undefined' ? navigator.onLine : true);
 
+  // Monitor hardware connection events smoothly at boot
   useEffect(() => {
-    // Increments by 1% every 25ms (~2.5 seconds total runtime) for a smooth, steady boot pacing
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Steady progress bar driver (~2.5 seconds total runtime)
+  useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           if (onComplete) {
-            // An intentional 200ms delay to give state frames time to commit cleanly
+            // Defers termination by 200ms to guarantee render loops commit application state frame updates
             setTimeout(onComplete, 200);
           }
           return 100;
@@ -35,8 +50,8 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
     return () => clearInterval(interval);
   }, [onComplete]);
 
-  // Dynamic helper to resolve active initialization logs based on app state
-  const getLoadingText = () => {
+  // Compute highly visible loading logs contextually depending on core initialization states
+  const loadingText = useMemo(() => {
     if (isFirstTime) {
       if (progress < 40) return 'Booting Core / ማዕቀፉን በመጫን ላይ...';
       if (progress >= 40 && progress < 80) return 'Linking Database / ዳታቤዝ በማገናኘት ላይ...';
@@ -46,21 +61,19 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
     if (progress < 40) return lang === 'en' ? 'Booting Core...' : 'ማዕቀፉን በመጫን ላይ...';
     if (progress >= 40 && progress < 80) return lang === 'en' ? 'Linking Database...' : 'ዳታቤዝ በማገናኘት ላይ...';
     return lang === 'en' ? 'Verifying Session...' : 'መለያ በመፈተሽ ላይ...';
-  };
+  }, [progress, isFirstTime, lang]);
 
   return (
-    // --- MAIN SPLASH SCREEN OVERLAY ---
     <div className="fixed inset-0 z-50 flex flex-col justify-between items-center p-6 bg-[#021b3d] transition-all duration-1000 ease-in-out select-none overflow-hidden font-sans text-slate-100">
       
-      {/* Top Status Bar Mock */}
+      {/* Top Status Bar Grid */}
       <div className="w-full flex justify-between items-center text-[10px] text-blue-200/40 tracking-wider font-mono px-4 mt-2">
         <span className="animate-pulse">SYS_INIT_OK</span>
         <span>V1.0.6</span>
       </div>
 
-      {/* CENTER ENGINE: Branding, Core Logo, and Identity Title */}
+      {/* CENTER ENGINE: Branding Layout & Typography */}
       <div className="flex flex-col items-center justify-center flex-grow -translate-y-6">
-        {/* Isolated Icon Anchor (Removed all extra container wraps, borders, and shadows) */}
         <div className="flex-shrink-0 mb-8">
           <DebterIcon size="lg" />
         </div>
@@ -82,27 +95,38 @@ export function SplashScreen({ onComplete, lang = 'en', isFirstTime = true }: Sp
             </div>
           ) : (
             <p className="text-blue-200/80 text-sm md:text-base font-light tracking-wide max-w-xs mx-auto">
-              {lang === 'en' 
-                ? "Shop Daily Notebook" 
-                : "የዕለት ሽያጭ መመዝገቢያ ደብተር"}
+              {lang === 'en' ? "Shop Daily Notebook" : "የዕለት ሽያጭ መመዝገቢያ ደብተር"}
             </p>
           )}
         </div>
       </div>
 
-      {/* BOTTOM RUNTIME: Tracking Indicator and System Progress */}
+      {/* BOTTOM RUNTIME: Dynamic Progress Monitoring Matrix */}
       <div className="w-full max-w-xs flex flex-col items-center gap-4 mb-8">
-        <div className="w-full flex justify-between text-xs text-blue-400 font-medium px-1">
-          <span className="flex items-center gap-2">
+        
+        {/* Connection Intercept Banner: Transparently assures users they are safe to proceed offline */}
+        {!isOnline && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium text-center animate-fade-in animate-pulse duration-1000">
+            <WifiOff className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>
+              {lang === 'en' 
+                ? "No Internet access! You can still record sales." 
+                : "የኢንተርኔት ግንኙነት የለም! ቢሆንም ሽያጭ መመዝገብ ይችላሉ።"}
+            </span>
+          </div>
+        )}
+
+        <div className="w-full flex justify-between text-xs text-blue-400 font-medium px-1 mt-1">
+          <span className="flex items-center gap-2 max-w-[80%]">
             <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin flex-shrink-0" />
-            <span className={isFirstTime ? "tracking-wide text-blue-200/70 font-medium" : "text-blue-200/70 tracking-wide"}>
-              {getLoadingText()}
+            <span className="text-blue-200/70 tracking-wide truncate">
+              {loadingText}
             </span>
           </span>
           <span className="font-mono text-blue-200/80">{progress}%</span>
         </div>
 
-        {/* Progress Bar Tracker */}
+        {/* Progress Tracker Track/Bar */}
         <div className="w-full h-1.5 bg-[#021126] rounded-full overflow-hidden border border-slate-800/40">
           <div 
             className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-[#f5b700] rounded-full transition-all duration-300 ease-out" 

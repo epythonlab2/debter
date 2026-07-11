@@ -2,14 +2,12 @@
 import { useState, useCallback } from 'react';
 import { dbService } from '../core/services/dbService';
 import { UseSalesProps, UseSalesReturn } from '../types/sales';
+import { PaymentMethodType } from '../components/sales/RecordSaleTab';
 
 /**
  * Custom React hook managing retail point-of-sale (POS) transactional mechanics.
  * Bridges responsive frontend data-entry states with robust local/remote database mutations,
  * handling physical inventory allocations, custom ad-hoc transactions, and credit tracking (Dube records).
- *
- * @param props Configurations, global shared collections, and synchronization pipelines.
- * @returns State properties, atomic structural updates, and transaction execution handlers.
  */
 export function useSales({
   currentUser,
@@ -28,7 +26,7 @@ export function useSales({
   const [salePrice, setSalePrice] = useState<string>('');
   const [saleQty, setSaleQty] = useState<number>(1);
   const [customItemName, setCustomItemName] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('cash');
   const [buyerName, setBuyerName] = useState<string>('');
   const [buyerPhone, setBuyerPhone] = useState<string>('');
   const [saleDate, setSaleDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -51,7 +49,7 @@ export function useSales({
     }
 
     // Extraction Strategy: Fall back systematically to internal state components if offline payload fields are missing
-    const activeItemId = offlinePayload 
+    let activeItemId = offlinePayload 
       ? (offlinePayload.selectedItemId || offlinePayload.item_id || (offlinePayload.item_name ? 'custom' : '')) 
       : selectedItemId;
 
@@ -75,9 +73,27 @@ export function useSales({
       return;
     }
 
-    // Synchronize catalog reference mapping matching string IDs
     let finalItemName = activeCustomItemName.trim();
-    const activeItem = items.find(i => String(i.id) === String(activeItemId));
+    
+    // 🌟 DYNAMIC OFFLINE DUPLICATE CONVERGENCE INTERCEPTOR
+    // If it's labeled as custom but matches an item name already in our sync collection, transform it auto-selectively.
+    let activeItem = items.find(i => String(i.id) === String(activeItemId));
+    
+    if (activeItemId === 'custom' && finalItemName) {
+      const duplicateMatch = items.find(
+        i => i.item_name?.trim().toLowerCase() === finalItemName.toLowerCase()
+      );
+      if (duplicateMatch) {
+        activeItem = duplicateMatch;
+        activeItemId = String(duplicateMatch.id);
+        // Sync state back to the UI so the select elements automatically latch on visually
+        if (!offlinePayload) {
+          setSelectedItemId(String(duplicateMatch.id));
+          setCustomItemName('');
+        }
+      }
+    }
+
     if (activeItemId !== 'custom' && activeItem) {
       finalItemName = activeItem.item_name || '';
     }
@@ -109,7 +125,7 @@ export function useSales({
           recordedBy: currentUser.id
         }, dubePayload);
       } else {
-        // 🔥 OPTIMIZATION: Process remote DB entries and stock updates in parallel
+        // Process DB entry insertion and catalog inventory updates in parallel
         const mutationWorkers: Promise<any>[] = [
           dbService.insertSaleWithDube({
             item_id: activeItemId, 
@@ -140,13 +156,12 @@ export function useSales({
         setBuyerName(''); 
         setBuyerPhone('');
 
-        // 🔥 CRITICAL FIX: Trigger background reload asynchronously without awaiting.
-        // This instantly resolves handleRecordSale so the frontend UI can terminate its loading spinner state.
+        // Trigger background reload asynchronously without awaiting.
         syncCloudDatabases().catch(err => console.error("Non-blocking background data-sync dropped:", err));
       }
     } catch (err: any) {
       triggerToast(err.message || "Failed to process sale mutation", "error");
-      throw err; // Escalate exception state to background thread synchronization controllers
+      throw err; 
     }
   }, [currentUser, selectedItemId, salePrice, saleQty, customItemName, paymentMethod, buyerName, buyerPhone, saleDate, items, triggerToast, syncCloudDatabases, t]);
 

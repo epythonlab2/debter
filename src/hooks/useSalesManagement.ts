@@ -1,3 +1,4 @@
+// src/hooks/useSalesManagement.ts
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { dbService } from '../core/services/dbService';
 import { Sale, DubeRecord, Shop, UserProfile, ToastState, Item } from '../types';
@@ -10,13 +11,13 @@ import { useLedgerSales } from './useLedgerSales';
 import { useAnalytics, TimeFilterType } from './useAnalytics';
 import { useAdmin } from './useAdmin'; 
 
-// Import isolated offline database utilities from IndexedDB store
 import { 
   saveOfflineSale, 
   getOfflineSales, 
   removeOfflineSale, 
-  CachedSalePayload 
+  CachedSalePayload,
 } from '../core/services/offlineSalesDb';
+import { PaymentMethodType } from '../components/sales/RecordSaleTab';
 
 interface UseSalesManagementProps {
   lang: 'en' | 'am';
@@ -29,6 +30,10 @@ interface UseSalesManagementProps {
   dailyGoal: number;
 }
 
+/**
+ * Orchestrates sales processing, analytical state configurations, custom state injections,
+ * and resilient background offline-to-cloud transactional synchronizations.
+ */
 export function useSalesManagement(props: UseSalesManagementProps) {
   const { lang, t, currentUser, setShops, items, setItems, dailyGoal } = props;
 
@@ -50,12 +55,12 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     targetId: string | null;
   }>({ isOpen: false, type: null, targetId: null });
 
-  // Offline Sync Management Engine States
+  // Sync state trackers
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // =========================================================================
-  // --- SYSTEM NOTIFICATION UTILITIES ---
+  // --- NOTIFICATION & OFFLINE DATA SYNC UTILITIES ---
   // =========================================================================
   const triggerToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ id: Date.now(), message, type });
@@ -65,17 +70,19 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     setToast(null);
   }, []);
 
-  // Utility to reload local cache snapshot into state frame directly from IndexedDB
+  /**
+   * Refreshes local component states against the IndexedDB storage layer.
+   */
   const refreshOfflineQueueState = useCallback(async () => {
     try {
       const currentQueue = await getOfflineSales();
       setOfflineQueue(currentQueue || []);
     } catch (e) {
-      console.error("Failed loading offline queue frames", e);
+      console.error("Failed loading offline queue frames:", e);
     }
   }, []);
 
-  // Monitor connectivity updates and fetch offline store on mount
+  // Sync online connection state listeners
   useEffect(() => {
     refreshOfflineQueueState();
 
@@ -125,13 +132,18 @@ export function useSalesManagement(props: UseSalesManagementProps) {
         await adminSlice.syncCohortsView();
       }
     } catch (err: any) {
-      triggerToast(err.message || "Failed syncing with remote server", "error");
+      // Catch and filter captive portal conditions during default state polling loops
+      const msg = String(err?.message || '').toLowerCase();
+      if (msg.includes('failed to fetch') || err?.name === 'TypeError') {
+        triggerToast(t.noInternet, "error");
+      } else {
+        triggerToast(err.message || "Failed syncing with remote server", "error");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.role, currentUser?.shop_id, selectedShopFilter, setShops, setItems, triggerToast]);
+  }, [currentUser?.role, currentUser?.shop_id, selectedShopFilter, setShops, setItems, triggerToast, lang]);
 
-  // Handle core synchronization on mount or filter switches
   useEffect(() => { 
     syncCloudDatabases(); 
   }, [syncCloudDatabases]);
@@ -171,16 +183,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     return sales;
   }, [sales, currentUser]);
 
-  const filteredDubeForMetrics = useMemo(() => {
-    if (!currentUser) return [];
-    if (currentUser.role === 'sales') {
-      const allowedSaleIds = new Set(filteredSalesForMetrics.map(s => String(s.id)));
-      return dubeRecords.filter(record => allowedSaleIds.has(String(record.sale_id)));
-    }
-    return dubeRecords;
-  }, [dubeRecords, filteredSalesForMetrics, currentUser]);
-
-  // 🟢 DYNAMIC ITEMS INJECTION MATRIX: EXTRACTS OFFLINE PENDING CUSTOM ITEMS AND INJECTS THEM INTO THE DROPDOWN LISTS
+  // Inject locally cached unique offline custom items gracefully into the store scope arrays
   const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
     const activeItemNames = new Set(items.map(i => (i.item_name || '').trim().toLowerCase()));
     const customOfflineItemsCollected: ItemRecord[] = [];
@@ -191,12 +194,11 @@ export function useSalesManagement(props: UseSalesManagementProps) {
         if (!activeItemNames.has(normalizedCustomName.toLowerCase())) {
           activeItemNames.add(normalizedCustomName.toLowerCase());
           
-          // Construct a mock ItemRecord representation so it populates selector options safely
           customOfflineItemsCollected.push({
             id: `local_item_${item.id}`,
             item_name: normalizedCustomName,
-            price: Number(item.salePrice || 0),
-            quantity: 0, // Pending creation validation
+            default_price: Number(item.salePrice || 0),
+            quantity: 0,
             shop_id: currentUser?.shop_id || '',
             created_at: new Date(item.cachedAt).toISOString()
           } as ItemRecord);
@@ -207,7 +209,49 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     return [...items, ...customOfflineItemsCollected];
   }, [items, offlineQueue, currentUser?.shop_id]);
 
-  // 🟢 HARDENED CONVERSION ENGINE: MAP UN-SYNCED OFFLINE QUEUE DATA TO PRESERVE ALL DETAILS IN THE LEDGER
+  // Inject locally mapped non-synchronized credit/dube elements into computation flows
+  const filteredDubeForMetrics = useMemo(() => {
+    let baseDube: DubeRecord[] = [];
+    if (currentUser) {
+      if (currentUser.role === 'sales') {
+        const allowedSaleIds = new Set(filteredSalesForMetrics.map(s => String(s.id)));
+        baseDube = dubeRecords.filter(record => allowedSaleIds.has(String(record.sale_id)));
+      } else {
+        baseDube = dubeRecords;
+      }
+    }
+
+    const offlinePendingDubeCollected: DubeRecord[] = [];
+    offlineQueue.forEach(item => {
+      if (item.paymentMethod === 'dube') {
+        let resolvedItemName = item.customItemName || t.unregItem || 'Item';
+        
+        if (item.selectedItemId && item.selectedItemId !== 'custom') {
+          const matchedCatalogItem = combinedItemsWithOfflineCustom.find(i => String(i.id) === String(item.selectedItemId));
+          if (matchedCatalogItem) {
+            resolvedItemName = matchedCatalogItem.item_name || resolvedItemName;
+          }
+        }
+
+        offlinePendingDubeCollected.push({
+          id: `local_dube_${item.id}`,
+          sale_id: item.id,
+          buyer_name: item.buyerName || 'Offline Customer',
+          buyer_phone: item.buyerPhone || '',
+          amount: Number(item.salePrice || 0) * Math.max(1, Number(item.saleQty || 1)),
+          is_paid: false,
+          created_at: new Date(item.cachedAt).toISOString(),
+          items: {
+            item_name: resolvedItemName
+          }
+        } as unknown as DubeRecord);
+      }
+    });
+
+    return [...offlinePendingDubeCollected, ...baseDube];
+  }, [dubeRecords, filteredSalesForMetrics, offlineQueue, combinedItemsWithOfflineCustom, currentUser, t]);
+
+  // Transform non-uploaded items into standard array items safely 
   const convertedOfflineSales = useMemo<Sale[]>(() => {
     return offlineQueue.map(item => {
       let resolvedItemName = item.customItemName || t.unregItem || 'Item';
@@ -243,13 +287,13 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     });
   }, [offlineQueue, combinedItemsWithOfflineCustom, currentUser, t]);
 
-  // 🟢 MERGE LOCAL CONVERTED QUEUE AND ONLINE CLOUD SNAPSHOT RECORDS INTO SINGLE SOURCE OF TRUTH
   const combinedSalesWithOfflinePayload = useMemo(() => {
     return [...convertedOfflineSales, ...filteredSalesForMetrics];
   }, [convertedOfflineSales, filteredSalesForMetrics]);
 
+  // Hook Slices Initialization Matrix
   const analytics = useAnalytics({
-    sales: filteredSalesForMetrics,
+    sales: combinedSalesWithOfflinePayload, 
     dubeRecords: filteredDubeForMetrics,
     selectedShopFilter: normalizedShopFilter,
     shopQuery,
@@ -259,7 +303,6 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     lang
   });
   
-  // 🟢 INJECT COMBINED ARRAY DOWN INTO THE LEDGER VIEW COMPUTATION SLICE
   const ledgerSlice = useLedgerSales({
     sales: combinedSalesWithOfflinePayload, 
     items: combinedItemsWithOfflineCustom, 
@@ -288,25 +331,33 @@ export function useSalesManagement(props: UseSalesManagementProps) {
   // =========================================================================
   // --- BACKGROUND OFFLINE SYNCHRONIZATION WORKER ---
   // =========================================================================
+  /**
+   * Evaluates connectivity pipelines to offload pending local records sequentially into cloud database arrays.
+   * Gracefully breaks operations if a captive network condition matches standard fetch exceptions.
+   */
   const processOfflineQueue = useCallback(async () => {
     if (!isOnline || isSyncing) return;
 
     try {
       const offlineQueueData = await getOfflineSales();
-      if (offlineQueueData.length === 0) return;
+      if (!offlineQueueData || offlineQueueData.length === 0) return;
 
-      // 🌟 THIS ACTS AS THE KEY FOR YOUR DIALOG WINDOW NOW
       setIsSyncing(true); 
-
-      const sortedQueue = offlineQueueData.sort((a, b) => a.cachedAt - b.cachedAt);
+      const sortedQueue = [...offlineQueueData].sort((a, b) => a.cachedAt - b.cachedAt);
 
       for (const cachedSale of sortedQueue) {
         try {
           const mockEvent = { preventDefault: () => {} } as React.FormEvent;
-          await salesSlice.handleRecordSale(mockEvent, cachedSale);
+          await (salesSlice.handleRecordSale as any)(mockEvent, cachedSale);
           await removeOfflineSale(cachedSale.id);
-        } catch (err) {
+        } catch (err: any) {
           console.error("Queue execution entry halted mid-way:", err);
+          const errorMsg = String(err?.message || '').toLowerCase();
+          
+          // Edge case intercept: Local Wi-Fi is up but external cloud APIs throw network connection blocks
+          if (errorMsg.includes('failed to fetch') || errorMsg.includes('networkerror') || err?.name === 'TypeError') {
+            triggerToast(t.noInternet, "error");
+          }
           break; 
         }
       }
@@ -314,46 +365,72 @@ export function useSalesManagement(props: UseSalesManagementProps) {
       await refreshOfflineQueueState();
       await syncCloudDatabases();
       
-      // Optional: Flash a quick completion toast *after* the dialog drops
-      triggerToast(t.syncComplete || "All offline records synced successfully!", "success");
+      const trailingQueueCheck = await getOfflineSales();
+      if (!trailingQueueCheck || trailingQueueCheck.length === 0) {
+        triggerToast(t.syncComplete || "All offline records synced successfully!", "success");
+      }
     } catch (error) {
       console.error("Database cache pipeline worker crash:", error);
       triggerToast("Sync encountered errors", "error");
     } finally {
       setIsSyncing(false);
     }
-  }, [isOnline, isSyncing, salesSlice, syncCloudDatabases, triggerToast, t, refreshOfflineQueueState]);
+  }, [isOnline, isSyncing, salesSlice, syncCloudDatabases, triggerToast, t, lang, refreshOfflineQueueState]);
 
-  // Handle auto-sync processing when coming back online
   useEffect(() => {
     if (isOnline) {
       processOfflineQueue();
     }
   }, [isOnline, processOfflineQueue]);
 
-  // Intercepted UI Form Controller Action Pipeline Submission Engine
+  // =========================================================================
+  // --- FORM RECORD SUBMISSION CONVERGENCE INTERCEPTOR ---
+  // =========================================================================
+  /**
+   * Intercepts sales inputs to route transactions between live server frames and IndexedDB queues depending on deep network operational status.
+   */
   const interceptedHandleRecordSale = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isOnline) {
-      try {
-        // 1. Let the inner slice record the sale and manage its own database sync cleanly
-        await salesSlice.handleRecordSale(e);
-        return; // Exit instantly so the UI form's 'finally' loader toggles back to false
-      } catch (err) {
-        console.warn("Server interaction failure fallback redirect triggered.");
-        // If the API completely drops, execution falls through to secure it locally instead
+    let finalSelection = salesSlice.selectedItemId;
+    let finalCustomName = salesSlice.customItemName.trim();
+    let internetAccessFailureEncountered = false;
+
+    if (finalSelection === 'custom' && finalCustomName) {
+      const duplicateMatch = combinedItemsWithOfflineCustom.find(
+        i => i.item_name?.trim().toLowerCase() === finalCustomName.toLowerCase()
+      );
+      if (duplicateMatch) {
+        finalSelection = String(duplicateMatch.id);
+        finalCustomName = '';
       }
     }
 
-    // --- FALLBACK OFFLINE CACHING PIPELINE ---
+    if (isOnline) {
+      try {
+        await salesSlice.handleRecordSale(e);
+        return; 
+      } catch (err: any) {
+        const errorMsg = String(err?.message || '').toLowerCase();
+        // Check for captive portals / missing routes
+        if (errorMsg.includes('failed to fetch') || errorMsg.includes('networkerror') || err?.name === 'TypeError') {
+          console.warn("Network interface online but outbound internet routes are blocked. Falling back to internal cache.");
+          internetAccessFailureEncountered = true;
+          triggerToast(t.noInternet, "error" );
+        } else {
+          console.warn("Server interaction failure fallback redirect triggered.");
+        }
+      }
+    }
+
+    // --- FALLBACK LOCAL CACHING PIPELINE ---
     const uniqueCachedPayload: CachedSalePayload = {
       id: `local_${crypto.randomUUID()}`,
-      selectedItemId: salesSlice.selectedItemId,
+      selectedItemId: finalSelection,
       salePrice: salesSlice.salePrice,
       saleQty: salesSlice.saleQty,
-      customItemName: salesSlice.customItemName,
-      paymentMethod: salesSlice.paymentMethod,
+      customItemName: finalCustomName,
+      paymentMethod: salesSlice.paymentMethod as PaymentMethodType,
       buyerName: salesSlice.buyerName,
       buyerPhone: salesSlice.buyerPhone,
       saleDate: salesSlice.saleDate,
@@ -362,16 +439,19 @@ export function useSalesManagement(props: UseSalesManagementProps) {
 
     await saveOfflineSale(uniqueCachedPayload);
     await refreshOfflineQueueState(); 
-    triggerToast(t.offlineSaved || "Sale saved locally. Syncing when connection returns.", "success");
+    
+    // Fall back to clean default toast message if standard offline metrics are evaluated natively
+    if (!isOnline && !internetAccessFailureEncountered) {
+      triggerToast(t.offlineSaved || "Sale saved locally. Syncing when connection returns.", "success");
+    }
 
-    // Clear UI state fields manually for offline path
     salesSlice.setSelectedItemId('');
     salesSlice.setSalePrice('');
-    salesSlice.setSaleQty(1 as any);
+    salesSlice.setSaleQty(1);
     salesSlice.setCustomItemName('');
     salesSlice.setBuyerName('');
     salesSlice.setBuyerPhone('');
-  }, [isOnline, salesSlice, triggerToast, t, refreshOfflineQueueState]);
+  }, [isOnline, salesSlice, combinedItemsWithOfflineCustom, triggerToast, t, lang, refreshOfflineQueueState]);
 
   // =========================================================================
   // --- TRANSACTION RECORD CLEANUP CONTROLLERS ---
@@ -408,7 +488,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
   const handleQuickSelect = useCallback((item: Item) => {
     salesSlice.setSelectedItemId(String(item.id)); 
     salesSlice.setSalePrice('');
-    salesSlice.setSaleQty(1 as any);
+    salesSlice.setSaleQty(1);
     salesSlice.setCustomItemName('');
   }, [salesSlice]);
 
@@ -468,9 +548,9 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     newInvPrice: inventorySlice.newInvPrice, setNewInvPrice: inventorySlice.setNewInvPrice,
     itemQuantity: inventorySlice.itemQuantity, setItemQuantity: inventorySlice.setItemQuantity,
     salesName: shopSlice.salesName, setSalesName: shopSlice.setSalesName,
-    newShopName: shopSlice.newShopName, setNewShopName: shopSlice.newShopName,
-    newShopLocation: shopSlice.newShopLocation, setNewShopLocation: shopSlice.newShopLocation,
-    newShopOwner: shopSlice.newShopOwner, setNewShopOwner: shopSlice.newShopOwner,
+    newShopName: shopSlice.newShopName, setNewShopName: shopSlice.setNewShopName,
+    newShopLocation: shopSlice.newShopLocation, setNewShopLocation: shopSlice.setNewShopLocation,
+    newShopOwner: shopSlice.newShopOwner, setNewShopOwner: shopSlice.setNewShopOwner,
     salesPhone: shopSlice.salesPhone, setSalesPhone: shopSlice.setSalesPhone,
     salesEmail: shopSlice.salesEmail, setSalesEmail: shopSlice.setSalesEmail,
     salesPassword: shopSlice.salesPassword, setSalesPassword: shopSlice.setSalesPassword,
@@ -479,11 +559,11 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     salesSlice.saleQty, salesSlice.setSaleQty, salesSlice.customItemName, salesSlice.setCustomItemName,
     salesSlice.paymentMethod, salesSlice.setPaymentMethod, salesSlice.buyerName, salesSlice.setBuyerName,
     salesSlice.buyerPhone, salesSlice.setBuyerPhone, salesSlice.saleDate, salesSlice.setSaleDate,
-    inventorySlice.itemName, inventorySlice.setItemName, inventorySlice.newInvPrice, inventorySlice.newInvPrice,
-    inventorySlice.itemQuantity, inventorySlice.setItemQuantity, shopSlice.salesName, shopSlice.setSalesName, 
-    shopSlice.newShopName, shopSlice.setNewShopName, shopSlice.newShopLocation, shopSlice.setNewShopLocation,
-    shopSlice.newShopOwner, shopSlice.setNewShopOwner, shopSlice.salesPhone, shopSlice.setSalesPhone,
-    shopSlice.salesEmail, shopSlice.setSalesEmail, shopSlice.salesPassword, shopSlice.setSalesPassword
+    inventorySlice.itemName, inventorySlice.setItemName, inventorySlice.newInvPrice, inventorySlice.itemQuantity, 
+    inventorySlice.setItemQuantity, shopSlice.salesName, shopSlice.setSalesName, shopSlice.newShopName, 
+    shopSlice.setNewShopName, shopSlice.newShopLocation, shopSlice.setNewShopLocation, shopSlice.newShopOwner, 
+    shopSlice.setNewShopOwner, shopSlice.salesPhone, shopSlice.setSalesPhone, shopSlice.salesEmail, 
+    shopSlice.setSalesEmail, shopSlice.salesPassword, shopSlice.setSalesPassword
   ]);
   
   const { activeShopItems: _droppedInvItems, ...cleanInventorySlice } = inventorySlice;
@@ -509,7 +589,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
     ...adminSlice, 
 
     sales: combinedSalesWithOfflinePayload, 
-    items: combinedItemsWithOfflineCustom, // 🟢 NOW INCLUDES NEW OFFLINE CUSTOM REGISTERED ENTRIES IN THE DROPDOWNS
+    items: combinedItemsWithOfflineCustom,
     dubeRecords: filteredDubeForMetrics, 
     shops: filteredShops, 
     shopQuery,
