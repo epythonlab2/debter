@@ -40,6 +40,8 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  
+  const [role, setRole] = useState<'admin' | 'lottery'>('admin');
 
   const handleInterceptAuthSuccess = (user: UserProfile) => {
     // Check both potential approval property variants for security
@@ -302,9 +304,16 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
 
         {mustChangePassword ? (
           <ResetPasswordForm 
-            t={t} identifier={identifier} newPassword={newPassword} confirmPassword={confirmPassword}
-            changePasswordLoading={changePasswordLoading} showNewPassword={showNewPassword} showConfirmPassword={showConfirmPassword}
-            setNewPassword={setNewPassword} setConfirmPassword={setConfirmPassword} setShowNewPassword={setShowNewPassword} setShowConfirmPassword={setShowConfirmPassword}
+            t={t} identifier={identifier} 
+            newPassword={newPassword} 
+            confirmPassword={confirmPassword}
+            changePasswordLoading={changePasswordLoading} 
+            showNewPassword={showNewPassword} 
+            showConfirmPassword={showConfirmPassword}
+            setNewPassword={setNewPassword} 
+            setConfirmPassword={setConfirmPassword} 
+            setShowNewPassword={setShowNewPassword} 
+            setShowConfirmPassword={setShowConfirmPassword}
             onSubmit={handleUpdatePasswordSubmit}
           />
         ) : registrationComplete && successMsg ? (
@@ -323,17 +332,58 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
           <form onSubmit={handleFormSubmit} className="space-y-4">
             {isRegistering ? (
               <RegisterForm 
-                t={t} fullName={fullName} formBusinessName={formBusinessName} location={location} email={email} identifier={identifier} password={password}
-                nameError={nameError} businessError={businessError} locationError={locationError} emailError={emailError} passwordErrorMsg={passwordErrorMsg} localValidationError={localValidationError} checkingPhone={checkingPhone} showPassword={showPassword}
-                setFullName={setFullName} setBusinessName={setBusinessName} setLocation={setLocation} setEmail={setEmail} setIdentifier={setIdentifier} setPassword={setPassword} setLocalValidationError={setLocalValidationError} setIsIdentifierValid={setIsIdentifierValid} setShowPassword={setShowPassword}
-                checkFullName={checkFullName} checkBusinessName={checkBusinessName} checkLocation={checkLocation} checkEmail={checkEmail} checkIdentifier={checkIdentifier} checkPassword={checkPassword}
-                loading={loading}
-              />
+		  t={t} 
+		  fullName={fullName} 
+		  formBusinessName={formBusinessName} 
+		  location={location} 
+		  email={email} 
+		  identifier={identifier} 
+		  password={password}
+		  nameError={nameError} 
+		  businessError={businessError} 
+		  locationError={locationError} 
+		  emailError={emailError} 
+		  passwordErrorMsg={passwordErrorMsg} 
+		  localValidationError={localValidationError} 
+		  checkingPhone={checkingPhone} 
+		  showPassword={showPassword}
+		  setFullName={setFullName} 
+		  setBusinessName={setBusinessName} 
+		  setLocation={setLocation} 
+		  setEmail={setEmail} 
+		  setIdentifier={setIdentifier} 
+		  setPassword={setPassword} 
+		  setLocalValidationError={setLocalValidationError} 
+		  setIsIdentifierValid={setIsIdentifierValid} 
+		  setShowPassword={setShowPassword}
+		  checkFullName={checkFullName} 
+		  checkBusinessName={checkBusinessName} 
+		  checkLocation={checkLocation} 
+		  checkEmail={checkEmail} 
+		  checkIdentifier={checkIdentifier} 
+		  checkPassword={checkPassword}
+		  loading={loading}
+		  
+		/>
             ) : (
               <LoginForm 
-                t={t} identifier={identifier} password={password} localValidationError={localValidationError} checkingPhone={checkingPhone} showPassword={showPassword} isVerifying={isVerifying} loading={loading} passwordErrorMsg={passwordErrorMsg}
-                setIdentifier={setIdentifier} setPassword={setPassword} setLocalValidationError={setLocalValidationError} setIsIdentifierValid={setIsIdentifierValid} setShowPassword={setShowPassword}
-                checkIdentifier={checkIdentifier} checkPassword={checkPassword} onRequestPasswordChange={handleRequestPasswordChange}
+                t={t} 
+                identifier={identifier} 
+                password={password} 
+                localValidationError={localValidationError} 
+                checkingPhone={checkingPhone} 
+                showPassword={showPassword} 
+                isVerifying={isVerifying} 
+                loading={loading} 
+                passwordErrorMsg={passwordErrorMsg}
+                setIdentifier={setIdentifier} 
+                setPassword={setPassword} 
+                setLocalValidationError={setLocalValidationError} 
+                setIsIdentifierValid={setIsIdentifierValid} 
+                setShowPassword={setShowPassword}
+                checkIdentifier={checkIdentifier} 
+                checkPassword={checkPassword} 
+	        onRequestPasswordChange={handleRequestPasswordChange}
               />
             )}
           </form>
@@ -342,8 +392,12 @@ export function Auth({ onAuthSuccess, t, lang = 'en', onLangChange }: AuthProps)
 
       {/* FOOTER SECTION */}
       <AuthFooter 
-        t={t} lang={lang} mustChangePassword={mustChangePassword} registrationComplete={registrationComplete} isRegistering={isRegistering}
-        setMustChangePassword={setMustChangePassword} setIsRegistering={setIsRegistering}
+        t={t} lang={lang} 
+        mustChangePassword={mustChangePassword} 
+        registrationComplete={registrationComplete} 
+        isRegistering={isRegistering}
+        setMustChangePassword={setMustChangePassword} 
+        setIsRegistering={setIsRegistering}
       />
     </div>
   );

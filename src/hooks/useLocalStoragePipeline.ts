@@ -135,6 +135,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     forcedFilter?: string
   ) => {
     if (!userSession) return;
+    
+    // 🟢 OFFLINE SHORT-CIRCUIT: Do not hit the network if the client browser reports offline state
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      console.log("[Sync Pipeline]: System is offline. Suppressing background remote queries.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const isSuperAdmin = userSession.role === 'super_admin';
@@ -183,7 +190,12 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         }
       }
     } catch (err: any) {
-      console.error("Database sync pipeline failure:", err);
+      // 🟢 SILENT INTERCEPT FOR CONNECTION DROPS: Prevent logging critical stack traces when offline
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        console.warn("[Sync Pipeline]: Server unreachable during periodic heartbeat check. Operating securely out of local storage mirror caches.");
+      } else {
+        console.error("Database sync pipeline failure:", err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -381,11 +393,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   // 🟢 FIXED SECURE TRANSACTION SAVING INTERCEPTOR Engine
   const handleRecordSale = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // 👈 Prevent double event bubbling triggers
     if (!currentUser) return;
 
     let finalItemName = customItemName.trim();
     let computedItemId = selectedItemId;
 
+    // Build the structural data properties first without executing state modifications mid-flight
     if (!selectedItemId || selectedItemId === 'custom') {
       computedItemId = `item-${Date.now()}`;
       if (!finalItemName) finalItemName = "Generic Item";
@@ -397,6 +411,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         shop_id: currentUser.shop_id || '',
         quantity: Number(saleQty || 1)
       };
+      // Batch state updates sequentially safely
       setItems(prev => [newLocalProduct, ...prev]);
     } else {
       const activeItem = items.find(i => String(i.id) === String(selectedItemId));
@@ -420,40 +435,39 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       payment_method: dbPaymentMethod
     };
 
-    const dubeBuyerName = buyerName;
-    const dubeBuyerPhone = buyerPhone;
-
-    // Build immediate UI record layer complete with local filter variables
     const localUIRecord = {
       ...salePayload,
-      buyer_name: dubeBuyerName,
-      buyer_phone: dubeBuyerPhone,
-      is_offline_pending: true // 🟢 Secure fallback visibility flag for Ledger rows
+      buyer_name: buyerName,
+      buyer_phone: buyerPhone,
+      is_offline_pending: true 
     };
 
-    // Commit to state arrays instantly for offline scannability
-    const updatedSalesArray = [localUIRecord, ...sales];
-    setSales(updatedSalesArray);
-    localStorage.setItem('debter_v1_sales', JSON.stringify(updatedSalesArray));
+    // Use functional updates for safety so React doesn't read stale local state variables
+    setSales(prevSales => {
+      const updated = [localUIRecord, ...prevSales];
+      localStorage.setItem('debter_v1_sales', JSON.stringify(updated));
+      return updated;
+    });
 
-    let updatedDubeArray = [...dubeRecords];
     if (dbPaymentMethod === 'dube') {
-      const newDubeRecord: DubeRecord = {
-        id: `dube-${Date.now()}`,
-        sale_id: saleId,
-        buyer_name: dubeBuyerName,
-        buyer_phone: dubeBuyerPhone,
-        amount: (Number(salePrice) || 0) * numericQty,
-        status: 'unpaid' as const,
-        created_at: new Date().toISOString(),
-        shop_id: currentUser.shop_id ?? "" 
-      };
-      updatedDubeArray = [newDubeRecord, ...dubeRecords];
-      setDubeRecords(updatedDubeArray);
-      localStorage.setItem('debter_v1_dube', JSON.stringify(updatedDubeArray));
+      setDubeRecords(prevDube => {
+        const newDubeRecord: DubeRecord = {
+          id: `dube-${Date.now()}`,
+          sale_id: saleId,
+          buyer_name: buyerName,
+          buyer_phone: buyerPhone,
+          amount: (Number(salePrice) || 0) * numericQty,
+          status: 'unpaid' as const,
+          created_at: new Date().toISOString(),
+          shop_id: currentUser.shop_id ?? "" 
+        };
+        const updated = [newDubeRecord, ...prevDube];
+        localStorage.setItem('debter_v1_dube', JSON.stringify(updated));
+        return updated;
+      });
     }
 
-    // Wipe layout elements clean for next checkout workflow iteration
+    // Wipe layout elements clean ONLY after all states are safely staged
     setSelectedItemId('');
     setSalePrice('');
     setSaleQty('1');
@@ -475,16 +489,14 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       }
 
       const dubePayload = dbPaymentMethod === 'dube' 
-        ? { buyer_name: dubeBuyerName, buyer_phone: dubeBuyerPhone } 
+        ? { buyer_name: buyerName, buyer_phone: buyerPhone } 
         : undefined;
       
       await dbService.insertSaleWithDube(salePayload, dubePayload);
       triggerToast(lang === 'en' ? "Transaction synchronized with cloud!" : "ሽያጩ ተመሳስሏል!", "success");
-      await syncCloudDatabases(currentUser);
       
     } catch (networkError: any) {
       console.warn("Cloud push failed. Stashing inside persistent offline cache map queue.");
-      
       setOfflineSalesQueue(prev => {
         const nextQueue = [...prev, localUIRecord];
         localStorage.setItem('debter_v1_offline_queue', JSON.stringify(nextQueue));

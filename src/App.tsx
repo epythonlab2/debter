@@ -2,7 +2,7 @@
 import React, { useMemo, useState, Suspense, lazy, useEffect } from 'react';
 import { translations } from './constants/translations';
 import { MessageSquare } from 'lucide-react';
-import { supabase } from './utils/supabaseClient'; // 🟢 Direct client reference for live security gate syncs
+import { supabase } from './utils/supabaseClient'; //  Direct client reference for live security gate syncs
 
 /** * ==========================================
  * THEME CONTEXT SYSTEM (V4 Integrated Strategy)
@@ -37,7 +37,7 @@ import CustomToast from './components/common/CustomToast';
 
 /**
  * ==========================================
- * MODALS & DIALOG OVERLAYS (Lazy-Loaded Named Exports 🟢)
+ * MODALS & DIALOG OVERLAYS (Lazy-Loaded Named Exports)
  * ==========================================
  */
 const DeleteConfirmModal = lazy(() => import('./components/modals/DeleteConfirmModal').then(m => ({ default: m.DeleteConfirmModal })));
@@ -46,7 +46,7 @@ const SimpleFeedbackForm = lazy(() => import('./components/layout/SimpleFeedback
 
 /**
  * ==========================================
- * DYNAMIC TAB WORKSPACE COMPONENTS (Lazy-Loaded Default Exports 🟢)
+ * DYNAMIC TAB WORKSPACE COMPONENTS (Lazy-Loaded Default Exports)
  * ==========================================
  */
 const PendingApprovalView = lazy(() => import('./components/PendingApprovalView'));
@@ -63,6 +63,9 @@ const AdminTab            = lazy(() => import('./components/admin/AdminTab'));
  */
 import { useLocalStoragePipeline } from './hooks/useLocalStoragePipeline';
 import { useSalesManagement } from './hooks/useSalesManagement';
+
+// 📱 HARDWARE/BUILD METRICS FOR ENFORCED UPDATES
+const CURRENT_VERSION_CODE = 9; // Your version 1.0.8 build is code 9
 
 const ViewChunkLoader = ({ message }: { message: string }) => (
   <div className="flex flex-col items-center justify-center py-24 space-y-4">
@@ -84,8 +87,39 @@ function MainDashboardApp() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackExpanded, setIsFeedbackExpanded] = useState(true);
 
+  // Forced update gating states
+  const [mustUpdate, setMustUpdate] = useState(false);
+  const [checkingVersion, setCheckingVersion] = useState(true);
+
   const db = useLocalStoragePipeline();
   const { lang, setLang } = db;
+
+  // 1. VERIFY SYSTEM INTEGRITY AND ENFORCE VERSION UPDATES (Supabase Gate)
+  useEffect(() => {
+    async function verifyAppBuildVersion() {
+      try {
+        const { data, error } = await supabase
+          .from('app_config')
+          .select('value')
+          .eq('key', 'min_version_required')
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.value) {
+          const requiredCode = parseInt(data.value, 10);
+          if (CURRENT_VERSION_CODE < requiredCode) {
+            setMustUpdate(true);
+          }
+        }
+      } catch (err) {
+        console.warn('[Version Gate Warning]: Failed to run integrity verification check.', err);
+      } finally {
+        setCheckingVersion(false);
+      }
+    }
+    verifyAppBuildVersion();
+  }, []);
 
   // Handle scrolling feedback bar contraction
   useEffect(() => {
@@ -96,11 +130,17 @@ function MainDashboardApp() {
     return () => window.removeEventListener('scroll', handleScrollVisibility);
   }, []);
 
-  // 🛡️ LIVE SECURITY CHECK GATE: Terminate stale cache instantly if account was disabled
+  // LIVE SECURITY CHECK GATE: Terminate stale cache instantly if account was disabled
   useEffect(() => {
     const verifyActiveSessionState = async () => {
       const cachedSession = localStorage.getItem('debter_v1_current_user');
       if (!cachedSession) return;
+
+      // OFFLINE CHECK: If the device is offline, skip live server sync security checks
+      if (typeof window !== 'undefined' && !window.navigator.onLine) {
+        console.log('[Security Gate]: Device is offline. Bypassing live gate validations.');
+        return;
+      }
 
       try {
         const parsedUser = JSON.parse(cachedSession);
@@ -114,6 +154,11 @@ function MainDashboardApp() {
           .maybeSingle();
 
         if (error) {
+          // CHECK FOR NETWORK ERRORS: Don't panic if it's just a network disconnect
+          if (error.message?.includes('Failed to fetch') || (error as any).status === 0) {
+            console.warn('[Session Sync Warning]: Server unreachable. Preserving current offline session cache context.');
+            return;
+          }
           console.error('[Session Sync Error]: Failed to reach live validation gate.', error.message);
           return;
         }
@@ -129,8 +174,13 @@ function MainDashboardApp() {
             window.location.reload(); // Hard fallback layout pop back to login
           }
         }
-      } catch (e) {
-        console.error('[Session Recovery Guard Panic]:', e);
+      } catch (e: any) {
+        // CATCH CONTEXT NETWORK FAILURE: Prevent network drops from throwing critical app crashes
+        if (e?.message?.includes('Failed to fetch')) {
+          console.warn('[Session Recovery Guard]: Suppressed offline fetch failure.');
+        } else {
+          console.error('[Session Recovery Guard Panic]:', e);
+        }
       }
     };
 
@@ -156,10 +206,12 @@ function MainDashboardApp() {
     t,
     currentUser: safeDb.currentUser,
     shops: db.shops, 
-    items: safeDb.items,
+    items: db.items,
+    sales: db.sales,
     dailyGoal: safeDb.dailyGoal,
     setShops: db.setShops,
     setItems: db.setItems,
+    setSales: db.setSales,
   });
 
   const filteredShops = useMemo(() => {
@@ -217,13 +269,41 @@ function MainDashboardApp() {
     });
   };
   
-  if (db.loadingPipeline || splashVisible) {
+  // Show standard initialization loading screen during security/version queries
+  if (db.loadingPipeline || splashVisible || checkingVersion) {
     return (
       <SplashScreen 
         lang={lang} 
         onComplete={() => setSplashVisible(false)} 
         isFirstTime={!safeDb.currentUser}
       />
+    );
+  }
+
+  // STOP EXPLOITATION: Direct force blocking view if the user app build is deprecated
+  if (mustUpdate) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center antialiased">
+        <div className="max-w-sm w-full bg-slate-800 border border-slate-700/50 rounded-2xl p-6 shadow-2xl space-y-5">
+          <div className="mx-auto w-12 h-12 bg-[#1a5fb4]/10 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-[#1a5fb4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white tracking-tight">Update Required</h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              We've launched critical database structural updates in version 1.0.8. Please update your application via the Google Play Store to continue.
+            </p>
+          </div>
+          <button 
+            onClick={() => window.open('https://play.google.com/store/apps/details?id=YOUR_APP_PACKAGE_NAME', '_blank')}
+            className="w-full bg-[#1a5fb4] hover:bg-[#154b91] text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#1a5fb4]/15 active:scale-[0.98]"
+          >
+            Update via Play Store
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -290,7 +370,7 @@ function MainDashboardApp() {
                       handleUpdateGoal={db.handleUpdateGoal}
                       t={t}
                       timeFilter={salesEngine.timeFilter}
-                      setTimeFilter={salesEngine.setTimeFilter} // 🟢 Fixed: properly explicitly bound to engine scope
+                      setTimeFilter={salesEngine.setTimeFilter} // Fixed: properly explicitly bound to engine scope
                     />
                   )}
 
@@ -301,7 +381,7 @@ function MainDashboardApp() {
                       setPaymentMethod={salesEngine.forms.setPaymentMethod as any}
                       saleQty={Number(salesEngine.forms.saleQty) || 0}
                       activeShopItems={salesEngine.activeShopItems ?? []}
-                      items={safeDb.items}
+                      items={salesEngine.items}
                       handleRecordSale={salesEngine.handleRecordSale}
                       handleQuickSelect={(item) => salesEngine.handleQuickSelect({
                         ...item,

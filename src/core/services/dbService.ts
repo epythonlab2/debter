@@ -292,8 +292,8 @@ export const dbService = {
   },
   
   /**
-   * Automatically registers an unlisted variant item into inventory if missing,
-   * then seamlessly binds the record to the active transaction table.
+   * Automatically checks if a custom variant item already exists by name.
+   * If missing, registers it cleanly. If found, re-uses it to avoid dropdown duplicates.
    */
   async insertCustomSaleWithDube(
     salePayload: {
@@ -307,24 +307,43 @@ export const dbService = {
     },
     dubePayload?: { buyer_name: string; buyer_phone: string }
   ): Promise<void> {
-    const fallbackItemId = crypto.randomUUID();
+    const normalizedName = salePayload.item_name.trim();
+    let resolvedItemId: string;
 
-    const { error: itemError } = await supabase
+    // 1. 🟢 SAFE ARRAY QUERY: Avoids .single() / .maybeSingle() entirely to eliminate PostgREST errors
+    const { data: matchedItems, error: fetchError } = await supabase
       .from('items')
-      .insert({
-        id: fallbackItemId, 
-        item_name: salePayload.item_name,
-        quantity: 0, 
-        default_price: salePayload.price_sold,
-        shop_id: salePayload.shop_id
-      });
+      .select('id')
+      .eq('shop_id', salePayload.shop_id)
+      .ilike('item_name', normalizedName); // Case-insensitive matching
 
-    if (itemError) throw itemError;
+    if (fetchError) throw fetchError;
 
+    // 2. 🟢 CHECK RESULTS ARRAY Safely
+    if (matchedItems && matchedItems.length > 0) {
+      // Match found! Use the existing item's database ID
+      resolvedItemId = matchedItems[0].id;
+    } else {
+      // No match found! Provision a brand new SKU entry safely
+      resolvedItemId = crypto.randomUUID();
+      const { error: itemError } = await supabase
+        .from('items')
+        .insert({
+          id: resolvedItemId, 
+          item_name: normalizedName,
+          quantity: 0, 
+          default_price: salePayload.price_sold,
+          shop_id: salePayload.shop_id
+        });
+
+      if (itemError) throw itemError;
+    }
+
+    // 3. Link the unified item ID directly to the sale transaction entry
     const completeSalePayload: InsertSalePayload = {
-      item_id: fallbackItemId,
-      item_name: salePayload.item_name,
-      custom_item_name: salePayload.item_name, 
+      item_id: resolvedItemId,
+      item_name: normalizedName,
+      custom_item_name: normalizedName, 
       quantity: salePayload.quantity,
       price_sold: salePayload.price_sold,
       sale_date: salePayload.sale_date,
@@ -335,7 +354,6 @@ export const dbService = {
 
     await this.insertSaleWithDube(completeSalePayload, dubePayload);
   },
-
   /**
    * Permanently deletes a target sale transaction from the ledger records database.
    */
@@ -668,37 +686,17 @@ async updateAccountPassword(userId: string, currentPassword: string, newPassword
     throw new Error("Password must meet structural rules (minimum 4 characters long).");
   }
 
-  // 1. Fetch the user's current password from the database to verify it exists and matches
-  const { data: userRow, error: fetchError } = await supabase
-    .from("users")
-    .select("password")
-    .eq("id", userId)
-    .single();
+  // Call the database function to verify and update safely in one transaction
+  const { data, error } = await supabase.rpc('change_user_password', {
+    p_user_id: userId,
+    p_current_password: currentPassword,
+    p_new_password: newPassword
+  });
 
-  if (fetchError || !userRow) {
-    console.error("Failed to fetch user context for validation:", fetchError);
-    throw new Error("User account not found.");
-  }
-
-  // 2. Validate that the typed current password matches the database record
-  // (Note: Since you are bypassing GoTrue and storing plain strings/custom hashes, 
-  // do a direct comparison or your custom decryption check here)
-  if (userRow.password !== currentPassword) {
-    throw new Error("The current password you entered is incorrect.");
-  }
-
-  // 3. 🟢 Current password is valid! Directly mutate the public table row
-  const { error: dbError } = await supabase
-    .from("users")
-    .update({ 
-      password: newPassword,
-      must_change_password: false
-    })
-    .eq("id", userId);
-
-  if (dbError) {
-    console.error("Profile password mutation failed to persist:", dbError);
-    throw new Error("Database update failed. Please check your connection and try again.");
+  if (error) {
+    console.error("Password change failed:", error);
+    // If our PG function raised a custom exception, show that message
+    throw new Error(error.message || "Database update failed.");
   }
 },
 
