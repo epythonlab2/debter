@@ -87,6 +87,44 @@ export interface DubeRecord {
   created_at: string;
 }
 
+export interface PurchaseItemLine {
+  id?: string;
+  itemId: string;
+  itemName?: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+}
+
+export interface PurchaseReceipt {
+  id: string;
+  shopId: string;
+  vendorName: string;
+  invoiceRef?: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  paymentMethod: 'cash' | 'transfer' | 'dube';
+  purchaseDate: string;
+  recordedBy?: string;
+  createdAt?: string;
+  items?: PurchaseItemLine[];
+}
+
+export interface PurchaseRecord {
+  id: string;
+  item_id: string | null;
+  item_name?: string;
+  quantity: number;
+  cost_price: number;
+  total_cost: number;
+  purchase_date: string;
+  shop_id: string;
+  supplier_name?: string | null;
+  recorded_by?: string | null;
+  created_at?: string;
+}
+
 export interface ToastState {
   id: number;
   message: string;

@@ -1,27 +1,15 @@
 // src/core/services/dbService.ts
 import { supabase } from "../../utils/supabaseClient";
-import { UserProfile, Shop, Item, Sale, DubeRecord } from "../../types";
+import { UserProfile, Shop, Item, Sale, DubeRecord, PurchaseRecord } from "../../types";
+import { InsertSalePayload, InsertPurchasePayload, PurchaseReceipt } from "../../types/payLoad";
 
-// Define the interface shape matching the frontend form payload
+// Explicit Types & Payloads
 export interface GlobalBroadcastPayload {
   message: string;
   severity: 'info' | 'warning' | 'critical';
   createdAt: string;
 }
 
-export interface InsertSalePayload {
-  id?: string;
-  item_id?: string | null;
-  item_name?: string;
-  custom_item_name?: string;
-  quantity: number;
-  price_sold: number;
-  sale_date: string;
-  shop_id: string;
-  recordedBy?: string;
-  paymentMethod?: string;
-  payment_method?: string;
-}
 
 /**
  * Core Data Access Object (DAO) providing synchronized persistence services 
@@ -33,10 +21,6 @@ export const dbService = {
   // --- RETRIEVAL & MUTATION SERVICES: SHOPS ---
   // =========================================================================
 
-  /**
-   * Fetches all registered retail shop profiles from the infrastructure database.
-   * Sorted alphabetically by shop name for easy administrative discovery.
-   */
   async fetchShops(): Promise<Shop[]> {
     const { data, error } = await supabase
       .from("shops")
@@ -54,9 +38,6 @@ export const dbService = {
     }));
   },
 
-  /**
-   * Provisions a new retail storefront instance in the system backend.
-   */
   async createShop(shop: { id?: string; name: string; location: string; ownerId: string | null }): Promise<Shop> {
     const { data, error } = await supabase
       .from("shops")
@@ -78,9 +59,6 @@ export const dbService = {
     };
   },
 
-  /**
-   * Permanently removes a target retail shop profile by its unique identity key.
-   */
   async deleteShop(shopId: string): Promise<void> {
     const { error } = await supabase.from('shops').delete().eq('id', shopId);
     if (error) throw new Error(error.message || "Failed to delete shop.");
@@ -90,10 +68,6 @@ export const dbService = {
   // --- RETRIEVAL & MUTATION SERVICES: ITEMS / INVENTORY ---
   // =========================================================================
 
-  /**
-   * Retrieves structural catalog items filtered by operational store allocations.
-   * Prioritizes newly modified SKUs first so inventory restocks surface immediately.
-   */
   async fetchItems(shopId?: string): Promise<Item[]> {
     let query = supabase
       .from("items")
@@ -118,9 +92,6 @@ export const dbService = {
     }));
   },
 
- /**
-   * Commits a new SKU item entry safely into the active inventory table ledger.
-   */
   async createItem(
     item: Omit<Item, 'id' | 'quantity' | 'shop_id'> & { 
       id?: string; 
@@ -154,9 +125,6 @@ export const dbService = {
     };
   },
   
-  /**
-   * Commits updates to an existing SKU item entry matching the target identifier key.
-   */
   async updateItem(id: string, updates: { item_name: string; default_price: number; quantity: number }): Promise<void> {
     const { error } = await supabase
       .from("items")
@@ -171,21 +139,176 @@ export const dbService = {
     if (error) throw error;
   },
 
-  /**
-   * Deletes a structural inventory item configuration matching the unique target key.
-   */
   async deleteItem(id: string): Promise<void> {
     const { error } = await supabase.from("items").delete().eq("id", id);
     if (error) throw error;
   },
 
+  async updateItemQuantity(itemId: string, newQty: number): Promise<void> {
+    const { error } = await supabase
+      .from('items')
+      .update({ quantity: newQty, updated_at: new Date().toISOString() })
+      .eq('id', itemId);
+
+    if (error) throw error;
+  },
+
+  // =========================================================================
+  // --- RETRIEVAL & MUTATION SERVICES: PURCHASES / INVENTORY RESTOCK ---
+  // =========================================================================
+
+  /**
+   * Fetches historical restock/purchase entries with their line items.
+   * Keeps the flattened structure intact while attaching header tax metadata.
+  */
+  async fetchPurchases(shopId?: string): Promise<PurchaseReceipt[]> {
+    let query = supabase
+      .from("purchases")
+      .select(`
+        *,
+        purchase_items (
+          id,
+          item_id,
+          quantity,
+          unit_cost,
+          total_cost,
+          items (
+            item_name
+          )
+        )
+      `)
+      .order("purchase_date", { ascending: false });
+
+    if (shopId && shopId !== 'all' && shopId !== 'undefined') {
+      query = query.eq("shop_id", shopId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Flatten nested relational data into PurchaseRecord UI format
+    const flattenedRecords: PurchaseReceipt[] = [];
+
+    (data || []).forEach((purchase: any) => {
+      // Extract tax metadata once per purchase header
+      const taxHeaderData = {
+        subtotal: Number(purchase.subtotal || 0),
+        vat_amount: Number(purchase.vat_amount || 0),
+        withholding_amount: Number(purchase.withholding_amount || 0),
+        total_amount: Number(purchase.total_amount || 0),
+        is_vat_applied: Boolean(purchase.is_vat_applied),
+        is_withholding_applied: Boolean(purchase.is_withholding_applied),
+      };
+
+      if (purchase.purchase_items && purchase.purchase_items.length > 0) {
+        purchase.purchase_items.forEach((itemLine: any) => {
+          flattenedRecords.push({
+            id: purchase.id,
+            item_id: itemLine.item_id,
+            item_name: itemLine.items?.item_name || 'Unknown SKU',
+            quantity: Number(itemLine.quantity || 0),
+            cost_price: Number(itemLine.unit_cost || 0),
+            total_cost: Number(itemLine.total_cost || 0),
+            purchase_date: purchase.purchase_date,
+            shop_id: purchase.shop_id,
+            supplier_name: purchase.vendor_name || null,
+            recorded_by: purchase.recorded_by || null,
+            created_at: purchase.created_at,
+            ...taxHeaderData
+          });
+        });
+      } else {
+        // Invoice header without line items
+        flattenedRecords.push({
+          id: purchase.id,
+          item_id: '',
+          item_name: 'No items',
+          quantity: 0,
+          cost_price: 0,
+          total_cost: Number(purchase.total_amount || 0),
+          purchase_date: purchase.purchase_date,
+          shop_id: purchase.shop_id,
+          supplier_name: purchase.vendor_name || null,
+          recorded_by: purchase.recorded_by || null,
+          created_at: purchase.created_at,
+          ...taxHeaderData
+        });
+      }
+    });
+
+    return flattenedRecords;
+  },
+ /**
+   * Records a complete multi-line restock transaction with tax metadata:
+   * 1. Inserts parent header into `purchases`
+   * 2. Inserts line items into `purchase_items` (SQL trigger `trg_purchase_item_restock` updates stock & cost)
+   */
+  async insertPurchase(payload: InsertPurchasePayload): Promise<void> {
+    const purchaseId = payload.id || crypto.randomUUID();
+    const purchaseDate = payload.purchase_date || new Date().toISOString().split('T')[0];
+
+    // 1. Create Purchase Header
+    const { error: headerErr } = await supabase
+      .from("purchases")
+      .insert([{
+        id: purchaseId,
+        shop_id: payload.shop_id,
+        vendor_name: payload.vendor_name || "General Vendor",
+        subtotal: payload.subtotal,
+        vat_amount: payload.vat_amount || 0.00,
+        withholding_amount: payload.withholding_amount || 0.00,
+        total_amount: payload.total_amount,
+        is_vat_applied: payload.is_vat_applied || false,
+        is_withholding_applied: payload.is_withholding_applied || false,
+        purchase_date: purchaseDate,
+        recorded_by: payload.recorded_by || null
+      }]);
+
+    if (headerErr) throw headerErr;
+
+    // 2. Prepare and Insert Line Items into `purchase_items`
+    const lineItems = payload.items.map((line) => ({
+      id: crypto.randomUUID(),
+      purchase_id: purchaseId,
+      item_id: line.item_id,
+      quantity: line.quantity,
+      unit_cost: line.unit_cost,
+      total_cost: line.total_cost,
+      unit_of_measurement: line.unit_of_measurement || 'Pcs'
+    }));
+
+    const { error: itemsErr } = await supabase
+      .from("purchase_items")
+      .insert(lineItems);
+
+    if (itemsErr) {
+      // Rollback header insertion if line items fail
+      await supabase.from("purchases").delete().eq("id", purchaseId);
+      throw itemsErr;
+    }
+  },
+
+  /**
+   * Deletes a purchase record by ID.
+   * Due to `ON DELETE CASCADE` in SQL, deleting from `purchases` automatically deletes 
+   * all related `purchase_items`. The database trigger `trg_purchase_item_revert_stock` 
+   * will handle stock reduction automatically on delete.
+   */
+  async deletePurchase(purchaseId: string) {
+    const { error } = await supabase
+      .from('purchases')
+      .delete()
+      .eq('id', purchaseId);
+
+    if (error) throw error;
+    return true;
+  },
+  
+
   // =========================================================================
   // --- TRANSACTIONAL LOGGING SERVICES: SALES & CREDIT (DUBE) ---
   // =========================================================================
 
-  /**
-   * Queries chronological ledger history entries of sales events, ordered newest first.
-   */
   async fetchSales(shopId?: string): Promise<Sale[]> {
     let query = supabase
       .from("sales")
@@ -229,9 +352,6 @@ export const dbService = {
     }));
   },
 
-  /**
-   * Executes a multi-stage data write that links sales transactions with credit records.
-   */
   async insertSaleWithDube(
     saleData: InsertSalePayload, 
     dubeData?: { buyer_name: string; buyer_phone: string }
@@ -239,10 +359,9 @@ export const dbService = {
     const generatedSaleId = saleData.id || crypto.randomUUID();
     const cleanMethod = (saleData.payment_method || saleData.paymentMethod || 'cash');
 
-    // 🟢 Keep ONLY the exact physical table fields present in your sales SQL definition
-    const insertPayload: Record<string, any> = {
+    const insertPayload = {
       id: generatedSaleId,
-      item_id: saleData.item_id || null, // Links to your newly provisioned custom SKU item
+      item_id: saleData.item_id || null,
       quantity: Number(saleData.quantity),
       price_sold: Number(saleData.price_sold),
       sale_date: saleData.sale_date,
@@ -251,15 +370,12 @@ export const dbService = {
       payment_method: cleanMethod
     };
 
-    // 🟢 REMOVED: The custom_item_name mapping blocks that caused the schema cache crash
-
     const { error: saleErr } = await supabase
       .from("sales")
       .insert([insertPayload]);
 
     if (saleErr) throw saleErr;
 
-    // --- Dube Credit Records Workflow Ledger Block ---
     if (cleanMethod.toLowerCase().trim() === "dube" && dubeData) {
       try {
         const totalAmount = Number(saleData.quantity ?? 0) * Number(saleData.price_sold ?? 0);
@@ -284,17 +400,12 @@ export const dbService = {
 
         if (linkErr) throw linkErr;
       } catch (error) {
-        // Rollback strategy: Clean up rogue sales entry if child insertion fails
         await this.deleteSale(generatedSaleId);
         throw error;
       }
     }
   },
   
-  /**
-   * Automatically checks if a custom variant item already exists by name.
-   * If missing, registers it cleanly. If found, re-uses it to avoid dropdown duplicates.
-   */
   async insertCustomSaleWithDube(
     salePayload: {
       item_name: string;
@@ -310,21 +421,17 @@ export const dbService = {
     const normalizedName = salePayload.item_name.trim();
     let resolvedItemId: string;
 
-    // 1. 🟢 SAFE ARRAY QUERY: Avoids .single() / .maybeSingle() entirely to eliminate PostgREST errors
     const { data: matchedItems, error: fetchError } = await supabase
       .from('items')
       .select('id')
       .eq('shop_id', salePayload.shop_id)
-      .ilike('item_name', normalizedName); // Case-insensitive matching
+      .ilike('item_name', normalizedName);
 
     if (fetchError) throw fetchError;
 
-    // 2. 🟢 CHECK RESULTS ARRAY Safely
     if (matchedItems && matchedItems.length > 0) {
-      // Match found! Use the existing item's database ID
       resolvedItemId = matchedItems[0].id;
     } else {
-      // No match found! Provision a brand new SKU entry safely
       resolvedItemId = crypto.randomUUID();
       const { error: itemError } = await supabase
         .from('items')
@@ -339,7 +446,6 @@ export const dbService = {
       if (itemError) throw itemError;
     }
 
-    // 3. Link the unified item ID directly to the sale transaction entry
     const completeSalePayload: InsertSalePayload = {
       item_id: resolvedItemId,
       item_name: normalizedName,
@@ -354,33 +460,16 @@ export const dbService = {
 
     await this.insertSaleWithDube(completeSalePayload, dubePayload);
   },
-  /**
-   * Permanently deletes a target sale transaction from the ledger records database.
-   */
+
   async deleteSale(saleId: string): Promise<void> {
     const { error } = await supabase.from("sales").delete().eq("id", saleId);
     if (error) throw new Error(error.message || "Failed to remove sale entry.");
-  },
-  
-  /**
-   * Adjusts stock volumes following active sales transactions.
-   */
-  async updateItemQuantity(itemId: string, newQty: number): Promise<void> {
-    const { error } = await supabase
-      .from('items')
-      .update({ quantity: newQty })
-      .eq('id', itemId);
-
-    if (error) throw error;
   },
 
   // =========================================================================
   // --- RETRIEVAL & MUTATION SERVICES: CREDIT (DUBE LEDGER) ---
   // =========================================================================
 
-  /**
-   * Queries customer credit balance accounts tracking outstanding debt profiles.
-   */
   async fetchDubeRecords(shopId?: string): Promise<DubeRecord[]> {
     let query = supabase
       .from("dube_records")
@@ -409,9 +498,6 @@ export const dbService = {
     }));
   },
 
-  /**
-   * Updates an outstanding credit balance account to "paid" status.
-   */
   async settleDubeDebt(dubeId: string): Promise<void> {
     const { error } = await supabase
       .from("dube_records")
@@ -425,9 +511,6 @@ export const dbService = {
   // --- RETRIEVAL & AUTH SERVICES: USER PROFILES ---
   // =========================================================================
   
-  /**
-   * Updates the approval status of a user profile.
-   */
   async updateUserApproval(userId: string, isApproved: boolean): Promise<void> {
     const { error } = await supabase
       .from("users")
@@ -437,29 +520,15 @@ export const dbService = {
     if (error) throw error;
   },
   
-  /**
-   * Updates the forced password change permission status of an owner/operator user profile.
-   */
   async updateUserPasswordPermission(userId: string, forceChange: boolean): Promise<void> {
-    console.log(`Sending to DB -> ID: ${userId}, must_change_password: ${forceChange}`);
-    
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("users")
       .update({ must_change_password: forceChange })
-      .eq("id", userId)
-      .select();
+      .eq("id", userId);
 
-    if (error) {
-      console.error("Supabase returned an error:", error);
-      throw error;
-    }
-    
-    console.log("Database updated successfully. Returned row:", data);
+    if (error) throw error;
   },
 
-  /**
-   * Fetches active registered user account profiles ordered alphabetically by identifier.
-   */
   async fetchUsers(): Promise<UserProfile[]> {
     const { data, error } = await supabase
       .from("users")
@@ -480,19 +549,14 @@ export const dbService = {
       approved: u.approved,
       createdBy: u.created_by,
       created_by: u.created_by,
-      password: u.password,
       must_change_password: !!u.must_change_password
     }));
   },
-  
 
   // =========================================================================
   // --- RETRIEVAL & MUTATION SERVICES: USER FEEDBACK ---
   // =========================================================================
 
-  /**
-   * Commits an anonymous or authenticated user feedback logging string.
-   */
   async submitFeedback(feedbackText: string, userId?: string | null): Promise<void> {
     if (!feedbackText.trim()) throw new Error("Feedback cannot be empty.");
 
@@ -505,15 +569,9 @@ export const dbService = {
         user_id: cleanUserId 
       }]);
 
-    if (error) {
-      console.error("Supabase error caught directly inside dbService:", error);
-      throw error;
-    }
+    if (error) throw error;
   },
   
-  /**
-   * Fetches full feedback log profiles joined with submitting user metadata via database view.
-   */
   async fetchUserFeedbackLogs() {
     const { data, error } = await supabase
       .from("view_user_feedback")
@@ -534,9 +592,6 @@ export const dbService = {
     }));
   },
 
-  /**
-   * Target the underlying base table directly for data state mutations.
-   */
   async archiveUserFeedback(feedbackId: string) {
     const { error } = await supabase
       .from('feedback') 
@@ -546,35 +601,18 @@ export const dbService = {
     if (error) throw error;
   },
   
-  /**
-   * Commits an administrative push alert directly to the global_broadcasts database table.
-   */
   async createGlobalBroadcast(payload: GlobalBroadcastPayload): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('global_broadcasts')
-        .insert([{ 
-          message: payload.message, 
-          severity: payload.severity, 
-          created_at: payload.createdAt 
-        }]);
+    const { error } = await supabase
+      .from('global_broadcasts')
+      .insert([{ 
+        message: payload.message, 
+        severity: payload.severity, 
+        created_at: payload.createdAt 
+      }]);
 
-      if (error) throw error;
-
-      console.log("Data row committed successfully into global_broadcasts table via Supabase Client.");
-
-      if (typeof window !== 'undefined' && (window as any).__triggerBroadcastMock) {
-        (window as any).__triggerBroadcastMock(payload);
-      }
-    } catch (error) {
-      console.error("Database connection insertion transaction aborted:", error);
-      throw error;
-    }
+    if (error) throw error;
   },
 
-  /**
-   * Sets up a real-time web socket listener directly on the global_broadcasts table.
-   */
   subscribeToGlobalBroadcasts(callback: (broadcast: { id: string; message: string; severity: string; createdAt: string }) => void) {
     const subscription = supabase
       .channel('realtime_global_broadcasts')
@@ -598,9 +636,6 @@ export const dbService = {
     };
   },
   
-  /**
-   * Updates the user's password directly via Supabase Auth.
-   */
   async updatePassword(newPassword: string): Promise<void> {
     const { error } = await supabase.auth.updateUser({
       password: newPassword
@@ -613,17 +648,12 @@ export const dbService = {
   // --- USER SELF-SERVICE MUTATIONS ---
   // =========================================================================
 
-  /**
-   * Updates the authenticated user's profile metadata across the users table,
-   * and synchronizes the associated storefront operational parameters inside the shops table.
-   */
   async updateUserProfile(
     userId: string, 
     data: { fullName: string; shopName: string; email: string; location: string }
   ): Promise<UserProfile> {
     if (!userId) throw new Error("Cannot update profile: Missing user identifier context.");
 
-    // 1. Update ONLY fields that exist on the users table (location REMOVED here)
     const { data: updatedUser, error: userError } = await supabase
       .from("users")
       .update({
@@ -635,12 +665,8 @@ export const dbService = {
       .select()
       .single();
 
-    if (userError) {
-      console.error("Failed to commit user base records to database:", userError);
-      throw userError;
-    }
+    if (userError) throw userError;
 
-    // 2. Safely route the location to the shops table where it belongs
     if (updatedUser.shop_id) {
       const { error: shopError } = await supabase
         .from("shops")
@@ -650,12 +676,9 @@ export const dbService = {
         })
         .eq("id", updatedUser.shop_id);
 
-      if (shopError) {
-        console.warn(`User updated, but associated shop alignment failed to synchronize:`, shopError);
-      }
+      if (shopError) throw shopError;
     }
 
-    // 3. Construct and map data state directly back to the app UI structures
     return {
       id: updatedUser.id,
       full_name: updatedUser.full_name,           
@@ -664,40 +687,24 @@ export const dbService = {
       role: updatedUser.role,
       shop_id: updatedUser.shop_id,
       businessName: updatedUser.business_name || '', 
-      location: data.location.trim(), // 🟢 Directly returns the updated text to avoid showing blank
+      location: data.location.trim(),
       approved: updatedUser.approved,
       createdBy: updatedUser.created_by,
-      password: updatedUser.password,
       must_change_password: !!updatedUser.must_change_password
     };
   },
- /**
- * Updates a user's password directly inside the public users table.
- * Validates that the current password matches before applying changes.
- */
-async updateAccountPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-  if (!userId) {
-    throw new Error("Cannot update credentials: Missing security identity context.");
-  }
-  if (!currentPassword) {
-    throw new Error("You must provide your current password to make changes.");
-  }
-  if (!newPassword || newPassword.length < 4) {
-    throw new Error("Password must meet structural rules (minimum 4 characters long).");
-  }
 
-  // Call the database function to verify and update safely in one transaction
-  const { data, error } = await supabase.rpc('change_user_password', {
-    p_user_id: userId,
-    p_current_password: currentPassword,
-    p_new_password: newPassword
-  });
+  async updateAccountPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    if (!userId || !currentPassword || !newPassword || newPassword.length < 4) {
+      throw new Error("Invalid parameters provided for password change.");
+    }
 
-  if (error) {
-    console.error("Password change failed:", error);
-    // If our PG function raised a custom exception, show that message
-    throw new Error(error.message || "Database update failed.");
+    const { error } = await supabase.rpc('change_user_password', {
+      p_user_id: userId,
+      p_current_password: currentPassword,
+      p_new_password: newPassword
+    });
+
+    if (error) throw new Error(error.message || "Database update failed.");
   }
-},
-
 };

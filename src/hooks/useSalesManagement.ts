@@ -1,7 +1,7 @@
 // src/hooks/useSalesManagement.ts
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { dbService } from '../core/services/dbService';
-import { Sale, DubeRecord, Shop, UserProfile, ToastState, Item } from '../types';
+import { Sale, DubeRecord, Shop, UserProfile, ToastState, Item, PurchaseRecord } from '../types';
 import { ItemRecord } from '../types/inventory';
 
 // Slice-logic hooks handling localized data slices
@@ -11,6 +11,7 @@ import { useShop } from './useShop';
 import { useLedgerSales } from './useLedgerSales'; 
 import { useAnalytics, TimeFilterType } from './useAnalytics';
 import { useAdmin } from './useAdmin'; 
+import { usePurchase } from './usePurchase';
 
 // IndexedDB local offline orchestration engine
 import { 
@@ -57,7 +58,7 @@ export function useSalesManagement(props: UseSalesManagementProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>('today');
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'item' | 'shop' | 'sale' | 'user' | null;
+    type: 'item' | 'shop' | 'sale' | 'user' | 'purchase' | null;
     targetId: string | null;
   }>({ isOpen: false, type: null, targetId: null });
 
@@ -230,7 +231,6 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
         activeItemNames.add(normalizedCustomName.toLowerCase());
         
         customOfflineItemsCollected.push({
-          // FIX: Change 'local_item_' to 'custom_saved_' to match RecordSaleTab dropdown expectations
           id: `custom_saved_${normalizedCustomName}`, 
           item_name: normalizedCustomName,
           default_price: Number(item.salePrice || 0),
@@ -259,8 +259,6 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
 
       return {
         id: item.id,
-        // FIX: Ensure custom ad-hoc sales use null instead of string IDs.
-        // This avoids foreign key constraint issues upstream when syncing.
         item_id: item.selectedItemId && item.selectedItemId !== 'custom' 
           ? item.selectedItemId 
           : null, 
@@ -325,6 +323,15 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
     triggerToast, 
     t, 
     lang
+  });
+
+  // Purchase slice initialization
+  const purchaseSlice = usePurchase({
+    currentUser,
+    selectedShopFilter: normalizedShopFilter,
+    syncCloudDatabases,
+    triggerToast,
+    t,
   });
 
   // =========================================================================
@@ -429,6 +436,8 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
         if (setGlobalSales) {
           setGlobalSales(prev => prev.filter(s => s.id !== targetId));
         }
+      } else if (type === 'purchase') {
+        await purchaseSlice.deletePurchase(targetId);
       }
       triggerToast(t.deleteSuccess || "Record deleted successfully", "success");
       setDeleteConfirmModal({ isOpen: false, type: null, targetId: null });
@@ -436,9 +445,9 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
     } catch (err: any) {
       triggerToast(err.message, "error");
     }
-  }, [deleteConfirmModal, t.deleteSuccess, setItems, setShops, setGlobalSales, triggerToast, syncCloudDatabases]);
+  }, [deleteConfirmModal, t.deleteSuccess, setItems, setShops, setGlobalSales, purchaseSlice, triggerToast, syncCloudDatabases]);
 
-  const triggerDeleteConfirm = useCallback((type: 'user' | 'item' | 'shop' | 'sale', id: string) => {
+  const triggerDeleteConfirm = useCallback((type: 'user' | 'item' | 'shop' | 'sale' | 'purchase', id: string) => {
     setDeleteConfirmModal({ isOpen: true, type, targetId: id });
   }, []);
 
@@ -526,7 +535,6 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
   
   const { activeShopItems: _droppedInvItems, ...cleanInventorySlice } = inventorySlice;
 
-
   // View fallback mapping for sales representatives
   useEffect(() => {
     if (currentUser) {
@@ -544,6 +552,7 @@ const combinedItemsWithOfflineCustom = useMemo<ItemRecord[]>(() => {
     ...shopSlice,
     ...ledgerSlice, 
     ...adminSlice, 
+    ...purchaseSlice,
 
     sales: combinedSalesWithOfflinePayload, 
     items: combinedItemsWithOfflineCustom,

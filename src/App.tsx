@@ -3,7 +3,6 @@ import React, { useMemo, useState, Suspense, lazy, useEffect } from 'react';
 import { translations } from './constants/translations';
 import { MessageSquare } from 'lucide-react';
 import { supabase } from './utils/supabaseClient'; //  Direct client reference for live security gate syncs
-
 /** * ==========================================
  * THEME CONTEXT SYSTEM (V4 Integrated Strategy)
  * ==========================================
@@ -54,6 +53,7 @@ const DashboardTab        = lazy(() => import('./components/dashboard/DashboardT
 const RecordSaleTab       = lazy(() => import('./components/sales/RecordSaleTab'));
 const LedgerTab           = lazy(() => import('./components/ledger/LedgerTab'));
 const InventoryTab        = lazy(() => import('./components/inventory/InventoryTab'));
+const PurchaseView        = lazy(() => import('./components/purchases/PurchasesView'));
 const AdminTab            = lazy(() => import('./components/admin/AdminTab'));
 
 /**
@@ -336,13 +336,19 @@ function MainDashboardApp() {
           setLang={setLang}
           currentUser={safeDb.currentUser}
           handleLogout={salesEngine.handleLogout}
-          onUpdateProfile={db.handleUpdateProfile }
+          onUpdateProfile={db.handleUpdateProfile}
           onUpdatePassword={db.handleUpdatePassword}
           t={t}
+          activeTab={salesEngine.activeTab}
+          setActiveTab={salesEngine.setActiveTab}
         />
-        
-
-        <MetaPanel currentUser={safeDb.currentUser} users={safeDb.users} t={t}/>
+        <MetaPanel
+          currentUser={safeDb.currentUser}
+          users={safeDb.users}
+          t={t}
+          activeTab={salesEngine.activeTab}
+          setActiveTab={salesEngine.setActiveTab}
+        />
 
         <main className="flex-1 pb-28 md:pb-20 overflow-y-auto">
           <div className="max-w-md mx-auto p-4 space-y-4">
@@ -394,6 +400,18 @@ function MainDashboardApp() {
 
                   {salesEngine.activeTab === 'ledger' && (
                     <LedgerTab {...salesEngine} currentUser={safeDb.currentUser} t={t} lang={lang} />
+                  )}
+                  
+                  {salesEngine.activeTab === 'purchases' && (
+                    <PurchaseView
+                      {...salesEngine}
+                      onRecordPurchase={salesEngine.recordPurchase}
+                      currentUser={safeDb.currentUser}
+                      items={db.items || []}
+                      onDeletePurchase={(id) => salesEngine.deletePurchase(id)}
+                      t={t}
+
+                    />
                   )}
 
                   {salesEngine.activeTab === 'inventory' && (

@@ -317,7 +317,8 @@ export const translations = {
   activateAccount: "Activate Account",
   deactivateAccount: "Deactivate (Block) Account",
   deleteRecord: "Delete Record",
-  selected: "Selected"
+  selected: "Selected",
+  purchaseTab: "Purchases",
   
 
   },
@@ -596,7 +597,7 @@ export const translations = {
     changePasswordLink: 'የይለፍ ቃል ለመቀየር?',
     resetPassword: 'የይለፍ ቃል መቀየር',
     // Client-Side Validation Error Messages
-    errorInvalidPhone: 'እባክዎ ትክክለኛ የስልክ ቁጥር (09xxxxxxxx / +251xxxxxxxx) ያስገቡ።',
+    errorInvalidPhone: 'እባክዎ ትክክለኛ የስልክ ቁጥር (09xxxxxxxx) ያስገቡ።',
     errorInvalidName: 'እባክዎ የመጀመሪያ እና የአባት ስምዎን ያስገቡ። ቁጥሮች ወይም ልዩ ምልክቶች አይፈቀዱም።',
     errorInvalidBusiness: 'የሱቅ ወይም የንግድ ስም ቢያንስ 2 ፊደላት መሆን አለበት።',
     errorInvalidLocation: 'እባክዎ የሱቁን መገኛ ወይም አድራሻ በትክክል ያስገቡ።',
@@ -639,7 +640,8 @@ export const translations = {
   activateAccount: "አካውንቱን ክፈት (አንቀሳቅስ)",
   deactivateAccount: "አካውንቱን ዝጋ (አግድ)",
   deleteRecord: "መዝገቡን ሰርዝ",
-  selected: "የተመረጡ"
+  selected: "የተመረጡ",
+  purchaseTab: "ግዢዎች",
 
 
   }

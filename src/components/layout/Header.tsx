@@ -1,6 +1,6 @@
 // src/components/layout/Header.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, Settings, User, Building, Palette, ChevronDown, Check, Sun, Moon, Laptop } from 'lucide-react';
+import { LogOut, Settings, User, Building, Palette, ChevronDown, Check, Sun, Moon, Laptop, Shield } from 'lucide-react';
 import { DebterIcon } from './DebterIcon';
 import SettingsModal from '../modals/SettingsModal'; 
 
@@ -17,6 +17,9 @@ interface HeaderProps {
   /** Security profile password change engine from useAuth hooks */
   onUpdatePassword: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
   t: any;
+  /** Navigation state props to switch active tab view */
+  activeTab?: string;
+  setActiveTab?: (tab: string) => void;
 }
 
 export function Header({ 
@@ -26,7 +29,9 @@ export function Header({
   handleLogout,
   onUpdateProfile,
   onUpdatePassword,
-  t 
+  t,
+  activeTab,
+  setActiveTab
 }: HeaderProps) {
   // CONSUME THE GLOBAL THEME STATE FROM YOUR CONTEXT ENGINE
   const { theme, setTheme } = useTheme();
@@ -81,6 +86,8 @@ export function Header({
       default: return t.systemTheme || "System Preference";
     }
   };
+
+  const isManagementScope = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
   return (
     <>
@@ -153,11 +160,11 @@ export function Header({
                   <Settings className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-45' : ''}`} />
                 </button>
 
-                {/* THEME DYNAMIC DROPDOWN OVERLAY WRAPPER (Solid backgrounds, no blur) */}
+                {/* THEME DYNAMIC DROPDOWN OVERLAY WRAPPER */}
                 {isDropdownOpen && (
                   <div className="absolute right-0 top-full mt-2.5 w-64 rounded-2xl border bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-800 shadow-xl dark:shadow-[0_20px_40px_rgba(0,0,0,0.65)] p-2.5 animate-in fade-in slide-in-from-top-2 duration-200 z-50 space-y-2.5 transition-colors duration-200">
                     
-                    {/* Profile Summary Card context box */}
+                    {/* Profile Summary Card */}
                     <div className="px-3 py-3 bg-white dark:bg-black/30 border border-slate-300/30 dark:border-transparent rounded-xl flex flex-col gap-2.5">
                       <span className="text-[10px] font-medium tracking-wide text-slate-500 dark:text-slate-400 leading-none">
                         {t.accountInfo || "Account Status"}
@@ -178,7 +185,7 @@ export function Header({
                       </div>
                     </div>
 
-                    {/* APPREARANCE CAPABILITY WRAPPER */}
+                    {/* APPEARANCE SECTION */}
                     <div className="relative px-1" ref={themeMenuRef}>
                       <div className="flex items-center justify-between mb-1.5 px-2">
                         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
@@ -189,7 +196,7 @@ export function Header({
                         </div>
                       </div>
 
-                      {/* Custom Theme Dropdown Activator Box */}
+                      {/* Custom Theme Dropdown Activator */}
                       <button
                         type="button"
                         onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
@@ -232,8 +239,33 @@ export function Header({
                       )}
                     </div>
 
-                    {/* INTERACTIVE ACTION SEGMENTS */}
+                    {/* ACTION LINKS */}
                     <div className="space-y-0.5 pt-1 border-t border-slate-300 dark:border-slate-800/60">
+                      
+                      {/* Admin Panel Direct Link */}
+                      {isManagementScope && setActiveTab && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            setActiveTab('admin');
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg hover:bg-white dark:hover:bg-slate-800/80 text-sm font-medium tracking-wide flex items-center justify-between transition-colors cursor-pointer group ${
+                            activeTab === 'admin'
+                              ? 'text-[#025da6] dark:text-blue-400 bg-white dark:bg-slate-800/60 font-semibold'
+                              : 'text-slate-700 dark:text-blue-100/80 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Shield className="w-4 h-4 text-slate-400 dark:text-blue-200/50 group-hover:text-[#025da6] transition-colors duration-200" />
+                            <span>{t.adminTab || "Admin Panel"}</span>
+                          </div>
+                          {activeTab === 'admin' && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#025da6] dark:bg-blue-400" />
+                          )}
+                        </button>
+                      )}
+
                       {/* Edit Profile Settings */}
                       <button
                         type="button"
@@ -247,7 +279,7 @@ export function Header({
                         <span>{t.editProfile || "Edit Profile Settings"}</span>
                       </button>
 
-                      {/* Explicit Interactive Termination Pipeline */}
+                      {/* Logout Option */}
                       <button 
                         type="button"
                         onClick={() => {

@@ -1,7 +1,8 @@
+// /hooks/useLocalStragePipeline
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { dbService } from '../core/services/dbService';
-import { UserProfile, Shop, Sale, DubeRecord, ToastState } from '../types';
+import { UserProfile, Shop, Sale, DubeRecord, ToastState, PurchaseRecord } from '../types';
 import { ItemRecord } from '../types/inventory';
 import { 
   INITIAL_SHOPS, 
@@ -41,6 +42,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   const [items, setItems] = useState<ItemRecord[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [dubeRecords, setDubeRecords] = useState<DubeRecord[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
   const [dailyGoal, setDailyGoal] = useState<number>(10000);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [loadingPipeline, setLoadingPipeline] = useState(true);
@@ -136,7 +138,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
   ) => {
     if (!userSession) return;
     
-    // 🟢 OFFLINE SHORT-CIRCUIT: Do not hit the network if the client browser reports offline state
+    // 🟢 OFFLINE SHORT-CIRCUIT
     if (typeof window !== 'undefined' && !navigator.onLine) {
       console.log("[Sync Pipeline]: System is offline. Suppressing background remote queries.");
       return;
@@ -151,11 +153,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         ? (targetFilter === 'all' ? undefined : targetFilter) 
         : (userSession.shop_id || undefined);
 
-      const [cloudShops, cloudItems, cloudSales, cloudDube] = await Promise.all([
+      // 🟢 FETCH PURCHASES ALONGSIDE OTHER CORE REPOSITORIES
+      const [cloudShops, cloudItems, cloudSales, cloudDube, cloudPurchases] = await Promise.all([
         dbService.fetchShops(),
         dbService.fetchItems(shopScope),
         dbService.fetchSales(shopScope),
-        dbService.fetchDubeRecords(shopScope)
+        dbService.fetchDubeRecords(shopScope),
+        shopScope ? dbService.fetchPurchases(shopScope) : Promise.resolve(null)
       ]);
 
       if (cloudShops) {
@@ -167,7 +171,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         localStorage.setItem('debter_v1_items', JSON.stringify(cloudItems));
       }
       
-      // 🟢 MERGE RECOVERY: Append pending offline local row array objects on sync returns
       if (cloudSales) {
         const savedQueueRaw = localStorage.getItem('debter_v1_offline_queue');
         const activeMemoryQueue = savedQueueRaw ? JSON.parse(savedQueueRaw) : [];
@@ -182,6 +185,12 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         localStorage.setItem('debter_v1_dube', JSON.stringify(cloudDube));
       }
 
+      // 🟢 PERSIST PURCHASES TO STATE & LOCAL STORAGE
+      if (cloudPurchases) {
+        setPurchases(cloudPurchases);
+        localStorage.setItem('debter_v1_purchases', JSON.stringify(cloudPurchases));
+      }
+
       if (isSuperAdmin || userSession.role === 'admin') {
         const cloudUsers = await dbService.fetchUsers();
         if (cloudUsers) {
@@ -190,7 +199,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         }
       }
     } catch (err: any) {
-      // 🟢 SILENT INTERCEPT FOR CONNECTION DROPS: Prevent logging critical stack traces when offline
       if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
         console.warn("[Sync Pipeline]: Server unreachable during periodic heartbeat check. Operating securely out of local storage mirror caches.");
       } else {
@@ -218,7 +226,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
             ? { buyer_name: pendingSale.buyer_name, buyer_phone: pendingSale.buyer_phone } 
             : undefined;
 
-          // Strip local UI metadata decoration flags before passing clean entity to backend
           const cleanSalePayload = {
             id: pendingSale.id,
             item_id: pendingSale.item_id,
@@ -232,7 +239,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
 
           await dbService.insertSaleWithDube(cleanSalePayload, dubePayload);
           
-          // Clean item out of the active running list state
           setOfflineSalesQueue(prev => {
             const nextQueue = prev.filter(item => item.id !== pendingSale.id);
             localStorage.setItem('debter_v1_offline_queue', JSON.stringify(nextQueue));
@@ -266,6 +272,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       const localItems = localStorage.getItem('debter_v1_items');
       const localSales = localStorage.getItem('debter_v1_sales');
       const localDube = localStorage.getItem('debter_v1_dube');
+      const localPurchases = localStorage.getItem('debter_v1_purchases');
       const localGoal = localStorage.getItem('debter_v1_goal');
       const localSession = localStorage.getItem('debter_v1_current_user');
 
@@ -285,6 +292,9 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
 
       if (localDube) setDubeRecords(JSON.parse(localDube));
       else setDubeRecords(INITIAL_DUBE_RECORDS);
+
+      // 🟢 HYDRATE PURCHASES
+      if (localPurchases) setPurchases(JSON.parse(localPurchases));
 
       if (localGoal) setDailyGoal(Number(localGoal));
 
@@ -390,16 +400,14 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     localStorage.setItem('debter_v1_goal', String(newGoal));
   };
 
-  // 🟢 FIXED SECURE TRANSACTION SAVING INTERCEPTOR Engine
   const handleRecordSale = async (e: React.FormEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // 👈 Prevent double event bubbling triggers
+    e.stopPropagation();
     if (!currentUser) return;
 
     let finalItemName = customItemName.trim();
     let computedItemId = selectedItemId;
 
-    // Build the structural data properties first without executing state modifications mid-flight
     if (!selectedItemId || selectedItemId === 'custom') {
       computedItemId = `item-${Date.now()}`;
       if (!finalItemName) finalItemName = "Generic Item";
@@ -411,7 +419,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         shop_id: currentUser.shop_id || '',
         quantity: Number(saleQty || 1)
       };
-      // Batch state updates sequentially safely
       setItems(prev => [newLocalProduct, ...prev]);
     } else {
       const activeItem = items.find(i => String(i.id) === String(selectedItemId));
@@ -442,7 +449,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       is_offline_pending: true 
     };
 
-    // Use functional updates for safety so React doesn't read stale local state variables
     setSales(prevSales => {
       const updated = [localUIRecord, ...prevSales];
       localStorage.setItem('debter_v1_sales', JSON.stringify(updated));
@@ -467,7 +473,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       });
     }
 
-    // Wipe layout elements clean ONLY after all states are safely staged
     setSelectedItemId('');
     setSalePrice('');
     setSaleQty('1');
@@ -681,6 +686,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     items, setItems,
     sales, setSales,
     dubeRecords, setDubeRecords,
+    purchases, setPurchases, 
     dailyGoal, handleUpdateGoal,
     currentUser, setCurrentUser,
     loadingPipeline, isLoading,
