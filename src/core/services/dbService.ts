@@ -157,87 +157,125 @@ export const dbService = {
   // --- RETRIEVAL & MUTATION SERVICES: PURCHASES / INVENTORY RESTOCK ---
   // =========================================================================
 
-  /**
-   * Fetches historical restock/purchase entries with their line items.
-   * Keeps the flattened structure intact while attaching header tax metadata.
-  */
-  async fetchPurchases(shopId?: string): Promise<PurchaseReceipt[]> {
-    let query = supabase
-      .from("purchases")
-      .select(`
-        *,
-        purchase_items (
-          id,
-          item_id,
-          quantity,
-          unit_cost,
-          total_cost,
-          items (
-            item_name
-          )
+/**
+ * Fetches historical restock/purchase entries with their line items.
+ * Accepts optional parameters for shop filtering, date range, and row limits.
+ */
+/**
+ * Fetches historical restock/purchase entries with their line items.
+ * Accepts optional parameters for shop filtering, date range, and row limits.
+ * Returns a flattened array of PurchaseReceipt records.
+ */
+async fetchPurchases(options?: {
+  shopId?: string;
+  startDate?: string; // e.g. 'YYYY-MM-DD'
+  endDate?: string;   // e.g. 'YYYY-MM-DD'
+  limit?: number;
+}): Promise<PurchaseReceipt[]> {
+  const { shopId, startDate, endDate, limit = 100 } = options || {};
+
+  let query = supabase
+    .from("purchases")
+    .select(`
+      *,
+      purchase_items (
+        id,
+        item_id,
+        quantity,
+        unit_cost,
+        total_cost,
+        items (
+          item_name
         )
-      `)
-      .order("purchase_date", { ascending: false });
+      )
+    `)
+    // Primary sort: newest purchase date first
+    // Secondary sort: newest timestamp/record first for same-day purchases
+    .order("purchase_date", { ascending: false })
+    .order("created_at", { ascending: false });
 
-    if (shopId && shopId !== 'all' && shopId !== 'undefined') {
-      query = query.eq("shop_id", shopId);
-    }
+  // Shop filter
+  if (shopId && shopId !== 'all' && shopId !== 'undefined') {
+    query = query.eq("shop_id", shopId);
+  }
 
-    const { data, error } = await query;
-    if (error) throw error;
+  // Date range filters
+  if (startDate) {
+    query = query.gte("purchase_date", startDate);
+  }
+  if (endDate) {
+    // Append end-of-day timestamp if a plain YYYY-MM-DD date is provided
+    const formattedEndDate = endDate.includes("T") ? endDate : `${endDate}T23:59:59`;
+    query = query.lte("purchase_date", formattedEndDate);
+  }
 
-    // Flatten nested relational data into PurchaseRecord UI format
-    const flattenedRecords: PurchaseReceipt[] = [];
+  // Limit parent purchase records (100 receipts by default)
+  if (limit) {
+    query = query.limit(limit);
+  }
 
-    (data || []).forEach((purchase: any) => {
-      // Extract tax metadata once per purchase header
-      const taxHeaderData = {
-        subtotal: Number(purchase.subtotal || 0),
-        vat_amount: Number(purchase.vat_amount || 0),
-        withholding_amount: Number(purchase.withholding_amount || 0),
-        total_amount: Number(purchase.total_amount || 0),
-        is_vat_applied: Boolean(purchase.is_vat_applied),
-        is_withholding_applied: Boolean(purchase.is_withholding_applied),
-      };
+  const { data, error } = await query;
+  if (error) throw error;
 
-      if (purchase.purchase_items && purchase.purchase_items.length > 0) {
-        purchase.purchase_items.forEach((itemLine: any) => {
-          flattenedRecords.push({
-            id: purchase.id,
-            item_id: itemLine.item_id,
-            item_name: itemLine.items?.item_name || 'Unknown SKU',
-            quantity: Number(itemLine.quantity || 0),
-            cost_price: Number(itemLine.unit_cost || 0),
-            total_cost: Number(itemLine.total_cost || 0),
-            purchase_date: purchase.purchase_date,
-            shop_id: purchase.shop_id,
-            supplier_name: purchase.vendor_name || null,
-            recorded_by: purchase.recorded_by || null,
-            created_at: purchase.created_at,
-            ...taxHeaderData
-          });
-        });
-      } else {
-        // Invoice header without line items
+  // Helper to strip time from timestamps
+  const cleanDate = (dateVal: any): string => {
+    if (!dateVal) return '';
+    const str = String(dateVal).trim();
+    return str.split('T')[0].split(' ')[0];
+  };
+
+  // Flatten nested relational data into PurchaseReceipt UI format
+  const flattenedRecords: PurchaseReceipt[] = [];
+
+  (data || []).forEach((purchase: any) => {
+    const formattedDate = cleanDate(purchase.purchase_date);
+
+    const taxHeaderData = {
+      subtotal: Number(purchase.subtotal || 0),
+      vat_amount: Number(purchase.vat_amount || 0),
+      withholding_amount: Number(purchase.withholding_amount || 0),
+      total_amount: Number(purchase.total_amount || 0),
+      is_vat_applied: Boolean(purchase.is_vat_applied),
+      is_withholding_applied: Boolean(purchase.is_withholding_applied),
+    };
+
+    if (purchase.purchase_items && purchase.purchase_items.length > 0) {
+      purchase.purchase_items.forEach((itemLine: any) => {
         flattenedRecords.push({
           id: purchase.id,
-          item_id: '',
-          item_name: 'No items',
-          quantity: 0,
-          cost_price: 0,
-          total_cost: Number(purchase.total_amount || 0),
-          purchase_date: purchase.purchase_date,
+          item_id: itemLine.item_id,
+          item_name: itemLine.items?.item_name || 'Unknown SKU',
+          quantity: Number(itemLine.quantity || 0),
+          cost_price: Number(itemLine.unit_cost || 0),
+          total_cost: Number(itemLine.total_cost || 0),
+          purchase_date: formattedDate,
           shop_id: purchase.shop_id,
           supplier_name: purchase.vendor_name || null,
           recorded_by: purchase.recorded_by || null,
           created_at: purchase.created_at,
           ...taxHeaderData
         });
-      }
-    });
+      });
+    } else {
+      flattenedRecords.push({
+        id: purchase.id,
+        item_id: '',
+        item_name: 'No items',
+        quantity: 0,
+        cost_price: 0,
+        total_cost: Number(purchase.total_amount || 0),
+        purchase_date: formattedDate,
+        shop_id: purchase.shop_id,
+        supplier_name: purchase.vendor_name || null,
+        recorded_by: purchase.recorded_by || null,
+        created_at: purchase.created_at,
+        ...taxHeaderData
+      });
+    }
+  });
 
-    return flattenedRecords;
-  },
+  return flattenedRecords;
+},
  /**
    * Records a complete multi-line restock transaction with tax metadata:
    * 1. Inserts parent header into `purchases`

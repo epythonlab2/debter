@@ -409,6 +409,7 @@ function MainDashboardApp() {
                       currentUser={safeDb.currentUser}
                       items={db.items || []}
                       onDeletePurchase={(id) => salesEngine.deletePurchase(id)}
+                      
                       t={t}
 
                     />

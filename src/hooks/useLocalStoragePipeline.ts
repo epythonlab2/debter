@@ -153,13 +153,13 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         ? (targetFilter === 'all' ? undefined : targetFilter) 
         : (userSession.shop_id || undefined);
 
-      // 🟢 FETCH PURCHASES ALONGSIDE OTHER CORE REPOSITORIES
+      // 🟢 FETCH PURCHASES UNCONDITIONALLY WITH SHOPSCOPE (ALLOWS UNDEFINED FOR ALL SHOPS)
       const [cloudShops, cloudItems, cloudSales, cloudDube, cloudPurchases] = await Promise.all([
         dbService.fetchShops(),
         dbService.fetchItems(shopScope),
         dbService.fetchSales(shopScope),
         dbService.fetchDubeRecords(shopScope),
-        shopScope ? dbService.fetchPurchases(shopScope) : Promise.resolve(null)
+        dbService.fetchPurchases({shopId:shopScope})
       ]);
 
       if (cloudShops) {
@@ -293,8 +293,9 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       if (localDube) setDubeRecords(JSON.parse(localDube));
       else setDubeRecords(INITIAL_DUBE_RECORDS);
 
-      // 🟢 HYDRATE PURCHASES
+      // 🟢 HYDRATE PURCHASES WITH FALLBACK TO EMPTY ARRAY
       if (localPurchases) setPurchases(JSON.parse(localPurchases));
+      else setPurchases([]);
 
       if (localGoal) setDailyGoal(Number(localGoal));
 

@@ -22,6 +22,13 @@ export interface CreatePurchaseInvoicePayload {
   items: ExtendedPurchaseItemLine[];
 }
 
+export interface FetchPurchasesParams {
+  shopId: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}
+
 export interface UsePurchaseOptions {
   currentUser?: {
     id: string;
@@ -55,24 +62,32 @@ export function usePurchase(options?: UsePurchaseOptions) {
     localStorage.setItem('debter_v1_purchases', JSON.stringify(data));
   };
 
-  // 🟢 2. Fetch Purchases and sync to localStorage
-  const fetchPurchases = useCallback(async (shopId: string) => {
-    if (!shopId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await dbService.fetchPurchases(shopId);
-      const fetchedList = data || [];
-      updatePurchasesState(fetchedList);
-    } catch (err: any) {
-      console.error('Failed to load purchases:', err);
-      const msg = err?.message || 'Failed to load purchase records.';
-      setError(msg);
-      if (triggerToast) triggerToast(msg, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [triggerToast]);
+  // 🟢 2. Fetch Purchases with date filtering and initial limit (default 100)
+  const fetchPurchases = useCallback(
+    async (params: string | FetchPurchasesParams) => {
+      // Allow passing either a shopId string directly or a FetchPurchasesParams object
+      const optionsObj: FetchPurchasesParams =
+        typeof params === 'string' ? { shopId: params, limit: 100 } : { limit: 100, ...params };
+
+      if (!optionsObj.shopId) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await dbService.fetchPurchases(optionsObj);
+        const fetchedList = data || [];
+        updatePurchasesState(fetchedList);
+      } catch (err: any) {
+        console.error('Failed to load purchases:', err);
+        const msg = err?.message || 'Failed to load purchase records.';
+        setError(msg);
+        if (triggerToast) triggerToast(msg, 'error');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [triggerToast]
+  );
 
   // 🟢 3. Record Multi-Line Purchase Invoice Header + Items
   const recordPurchase = async (payload: CreatePurchaseInvoicePayload) => {
@@ -122,7 +137,7 @@ export function usePurchase(options?: UsePurchaseOptions) {
     }
   };
 
-  // 🟢 4. Delete Single Purchase Record (Deletes header, cascade deletes items & trigger reverts stock)
+  // 🟢 4. Delete Single Purchase Record
   const deletePurchase = async (purchaseId: string, shop_id?: string) => {
     setError(null);
     try {

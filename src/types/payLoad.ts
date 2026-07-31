@@ -36,7 +36,6 @@ export interface InsertPurchasePayload {
   recorded_by?: string | null;
   items: InsertPurchaseItemPayload[];
 }
-
 export interface PurchaseReceipt {
   id: string;
   item_id: string;
@@ -49,7 +48,7 @@ export interface PurchaseReceipt {
   supplier_name: string | null;
   recorded_by: string | null;
   created_at: string;
-  
+
   // Tax compliance metadata fields
   subtotal?: number;
   vat_amount?: number;
