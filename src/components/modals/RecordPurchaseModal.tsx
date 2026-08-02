@@ -33,7 +33,7 @@ interface RecordPurchaseModalProps {
   t?: Record<string, string>;
 }
 
-const COMMON_UOMS = ['Pcs', 'Kg', 'Box', 'Ltr', 'Pack', 'Carton'];
+const COMMON_UOMS = ['Pcs', 'Kg', 'Box', 'Litre','Meter', 'Pack', 'Carton'];
 
 /* ============================================================================
    2. SUB-COMPONENT: SEARCHABLE ITEM SELECT DROPDOWN (MEMOIZED)

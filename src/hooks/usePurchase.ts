@@ -4,68 +4,147 @@ import { useState, useCallback } from 'react';
 import { dbService } from '../core/services/dbService';
 import { PurchaseRecord, PurchaseItemLine } from '../types';
 
+/** LocalStorage key for persisting cached purchases across page refreshes */
+const PURCHASES_CACHE_KEY = 'debter_v1_purchases';
+
+// ============================================================================
+// TYPE DEFINITIONS & CONTRACTS
+// ============================================================================
+
+/**
+ * Extended purchase line item incorporating measurement units and explicit total costs.
+ */
 export interface ExtendedPurchaseItemLine extends PurchaseItemLine {
+  /** Optional unit of measurement (e.g., 'kg', 'pcs', 'box') */
   unitOfMeasurement?: string;
+  /** Total calculated cost for this item line (quantity * unit cost) */
   totalCost: number;
 }
 
+/**
+ * Payload required to record a multi-line purchase invoice header and its nested items.
+ */
 export interface CreatePurchaseInvoicePayload {
+  /** Tenant / Shop identifier */
   shopId: string;
+  /** Optional user identifier recording the transaction */
   userId?: string;
+  /** Supplier / Vendor entity name */
   vendorName?: string;
+  /** Net invoice total before tax additions */
   subtotal: number;
+  /** Total computed Value Added Tax (VAT) */
   vatAmount: number;
+  /** Total computed Withholding Tax */
   withholdingAmount: number;
+  /** Final gross payable amount including applicable taxes */
   totalAmount: number;
+  /** Flag indicating whether VAT calculation rules were applied */
   isVatApplied: boolean;
+  /** Flag indicating whether withholding tax deduction was applied */
   isWithholdingApplied: boolean;
+  /** Array of line items attached to this purchase invoice */
   items: ExtendedPurchaseItemLine[];
 }
 
+/**
+ * Query parameters for fetching purchase invoices from remote DB or cache.
+ */
 export interface FetchPurchasesParams {
+  /** Target shop ID */
   shopId: string;
+  /** ISO date filter boundary start */
   startDate?: string;
+  /** ISO date filter boundary end */
   endDate?: string;
+  /** Pagination limit (defaults to 100) */
   limit?: number;
 }
 
+/**
+ * Injection options provided to the {@link usePurchase} hook.
+ */
 export interface UsePurchaseOptions {
+  /** Authenticated user context and assigned shop parameters */
   currentUser?: {
     id: string;
     shop_id?: string | null;
     shopId?: string | null;
     role?: string;
   } | null;
+  /** Optional shop override filter parameter */
   selectedShopFilter?: string;
+  /** Optional async sync handler to push updates to secondary/cloud databases */
   syncCloudDatabases?: () => Promise<void>;
+  /** Toast alert notification dispatch callback */
   triggerToast: (msg: string, type?: 'success' | 'error') => void;
+  /** Localization dictionary reference */
   t?: any;
 }
 
+// ============================================================================
+// CUSTOM HOOK IMPLEMENTATION
+// ============================================================================
+
+/**
+ * Custom React hook managing purchase orders and receipt ledger state.
+ * Handles persistence layer caching, remote synchronization, invoice creation,
+ * and deletion operations.
+ *
+ * @param options - Configuration options and side-effect handlers (toasts, cloud sync, localization)
+ */
 export function usePurchase(options?: UsePurchaseOptions) {
   const { syncCloudDatabases, triggerToast, t } = options || {};
 
-  // 🟢 1. Initialize state directly from localStorage cache
+  // --------------------------------------------------------------------------
+  // STATE MANAGEMENT & LOCAL STORAGE CACHING
+  // --------------------------------------------------------------------------
+
+  /** Purchase records state initialized synchronously from LocalStorage */
   const [purchases, setPurchases] = useState<PurchaseRecord[]>(() => {
     if (typeof window === 'undefined') return [];
-    const cached = localStorage.getItem('debter_v1_purchases');
-    return cached ? JSON.parse(cached) : [];
+    try {
+      const cached = localStorage.getItem(PURCHASES_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      console.warn('Failed to read purchases cache from LocalStorage:', e);
+      return [];
+    }
   });
 
+  /** Loading state flag for read queries */
   const [loading, setLoading] = useState<boolean>(false);
+
+  /** Processing state flag for write/mutation requests */
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
+
+  /** Active operational error message container */
   const [error, setError] = useState<string | null>(null);
 
-  // Helper to sync memory state with localStorage
+  /**
+   * Helper function to atomically update React state and LocalStorage cache.
+   * Ensures UI reactivity and client-side data persistence remain synchronized.
+   */
   const updatePurchasesState = (data: PurchaseRecord[]) => {
     setPurchases(data);
-    localStorage.setItem('debter_v1_purchases', JSON.stringify(data));
+    try {
+      localStorage.setItem(PURCHASES_CACHE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save purchases state to LocalStorage:', e);
+    }
   };
 
-  // 🟢 2. Fetch Purchases with date filtering and initial limit (default 100)
+  // --------------------------------------------------------------------------
+  // READ OPERATIONS
+  // --------------------------------------------------------------------------
+
+  /**
+   * Fetches purchase invoices filtered by date boundaries and tenant/shop parameters.
+   * Accepts either a raw shop ID string or a structured {@link FetchPurchasesParams} object.
+   */
   const fetchPurchases = useCallback(
     async (params: string | FetchPurchasesParams) => {
-      // Allow passing either a shopId string directly or a FetchPurchasesParams object
+      // Normalize parameter input format
       const optionsObj: FetchPurchasesParams =
         typeof params === 'string' ? { shopId: params, limit: 100 } : { limit: 100, ...params };
 
@@ -89,8 +168,19 @@ export function usePurchase(options?: UsePurchaseOptions) {
     [triggerToast]
   );
 
-  // 🟢 3. Record Multi-Line Purchase Invoice Header + Items
+  // --------------------------------------------------------------------------
+  // WRITE & MUTATION OPERATIONS
+  // --------------------------------------------------------------------------
+
+  /**
+   * Persists a new purchase invoice header with associated line items to the database,
+   * updates local cache, and triggers background cloud synchronizations.
+   *
+   * @param payload - Structured invoice details and nested array of purchased items
+   * @returns Resolution status object indicating execution outcome
+   */
   const recordPurchase = async (payload: CreatePurchaseInvoicePayload) => {
+    // Validate line items presence prior to dispatching DB request
     if (!payload.items || payload.items.length === 0) {
       const msg = t?.noItemsError || 'No items in purchase invoice.';
       if (triggerToast) triggerToast(msg, 'error');
@@ -101,7 +191,7 @@ export function usePurchase(options?: UsePurchaseOptions) {
     setError(null);
 
     try {
-      // Send single payload with header taxes and items array to dbService
+      // Map domain payload into target DB schema contract
       await dbService.insertPurchase({
         shop_id: payload.shopId,
         recorded_by: payload.userId || null,
@@ -121,9 +211,10 @@ export function usePurchase(options?: UsePurchaseOptions) {
         })),
       });
 
+      // Refetch records & execute secondary sync side-effects
       await fetchPurchases(payload.shopId);
       if (syncCloudDatabases) await syncCloudDatabases();
-      if (triggerToast) triggerToast(t?.purchaseRecorded || 'Purchase invoice recorded successfully', 'success');
+      if (triggerToast) triggerToast(t?.purchaseRecorded, 'success');
 
       return { success: true };
     } catch (err: any) {
@@ -137,19 +228,25 @@ export function usePurchase(options?: UsePurchaseOptions) {
     }
   };
 
-  // 🟢 4. Delete Single Purchase Record
+  /**
+   * Deletes a purchase record by ID and updates local state using optimistic cleanup strategies.
+   *
+   * @param purchaseId - Unique identifier of the purchase record to purge
+   * @param shop_id - Optional shop ID context to trigger remote re-fetching
+   * @returns Resolution status object indicating execution outcome
+   */
   const deletePurchase = async (purchaseId: string, shop_id?: string) => {
     setError(null);
     try {
       await dbService.deletePurchase(purchaseId);
 
-      // Optimistically clean local storage & memory state
+      // Optimistic cache update: update UI state before full network sync resolves
       const updated = purchases.filter((p) => p.id !== purchaseId);
       updatePurchasesState(updated);
 
       if (shop_id) await fetchPurchases(shop_id);
       if (syncCloudDatabases) await syncCloudDatabases();
-      if (triggerToast) triggerToast(t?.purchaseDeleted || 'Purchase record deleted', 'success');
+      if (triggerToast) triggerToast(t?.purchaseDeleted, 'success');
 
       return { success: true };
     } catch (err: any) {
@@ -160,6 +257,10 @@ export function usePurchase(options?: UsePurchaseOptions) {
       return { success: false, error: msg };
     }
   };
+
+  // --------------------------------------------------------------------------
+  // HOOK INTERFACE EXPORTS
+  // --------------------------------------------------------------------------
 
   return {
     purchases,

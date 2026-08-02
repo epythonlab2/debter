@@ -1,7 +1,6 @@
 // src/components/AdminTab.tsx
 import React, { useState, useMemo } from 'react';
 import AdminControls from './AdminControls';
-import Owners from './Owners';
 import SalesPersonForm from './SalesPersonForm';
 import StaffList from './StaffList';
 import BroadcastModal from '../modals/BroadcastModal'; 

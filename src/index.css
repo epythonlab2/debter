@@ -6,3 +6,56 @@
  * on your root element instead of defaulting strictly to the system OS media query.
  */
 @custom-variant dark (&:where(.dark, .dark *));
+
+
+/* ================================================================== */
+/* PRINT MEDIA STYLESHEET                                             */
+/* ================================================================== */
+@media print {
+  @page { 
+    margin: 0.6cm; 
+    size: auto; 
+  }
+
+  body * { 
+    visibility: hidden !important; 
+  }
+
+  .print-container, 
+  .print-container * { 
+    visibility: visible !important; 
+  }
+
+  .print-container { 
+    position: absolute !important; 
+    left: 0 !important; 
+    top: 0 !important; 
+    width: 100% !important; 
+    max-width: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    background: #ffffff !important; 
+    color: #000000 !important; 
+  }
+
+  /* Note: Replaced .print\\:hidden with .print\:hidden for standard CSS */
+  .no-print, 
+  .print\:hidden { 
+    display: none !important; 
+  }
+
+  .print-header { 
+    display: block !important; 
+    border-bottom: 2px solid #000000 !important; 
+    padding-bottom: 8px !important; 
+    margin-bottom: 12px !important; 
+  }
+
+  .print-card { 
+    break-inside: avoid !important; 
+    page-break-inside: avoid !important; 
+    border: 1px solid #cbd5e1 !important; 
+    box-shadow: none !important; 
+    margin-bottom: 8px !important; 
+  }
+}

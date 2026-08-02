@@ -37,23 +37,33 @@ export interface InsertPurchasePayload {
   items: InsertPurchaseItemPayload[];
 }
 export interface PurchaseReceipt {
+  // Core Identifiers & Foreign Keys
   id: string;
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  cost_price: number;
-  total_cost: number;
-  purchase_date: string;
   shop_id: string;
-  supplier_name: string | null;
+  item_id: string;
   recorded_by: string | null;
+
+  // Transaction Details
+  supplier_name: string | null;
+  purchase_date: string; // ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)
   created_at: string;
 
-  // Tax compliance metadata fields
+  // Item Details
+  item_name: string;
+  quantity: number;
+  cost_price: number; // Unit cost price
+  total_cost: number; // Line item total (quantity * cost_price)
+  unit_of_measurement?: string;
+
+  // Tax Compliance & Financial Breakdown
   subtotal?: number;
   vat_amount?: number;
   withholding_amount?: number;
   total_amount?: number;
   is_vat_applied?: boolean;
   is_withholding_applied?: boolean;
+
+  // Invoice / Payment Tracking (Recommended Additions)
+  invoice_ref?: string | null;
+  payment_status?: 'paid' | 'credit' | 'partial';
 }

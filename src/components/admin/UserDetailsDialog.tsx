@@ -7,7 +7,7 @@ interface UserDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   t: Record<string, any>;
-  onToggleStatus: (user: any) => Promise<void> | void; // Add this line
+  onToggleStatus: (user: any) => Promise<void> | void;
 }
 
 export default function UserDetailsDialog({ user, isOpen, onClose, t }: UserDetailsDialogProps) {

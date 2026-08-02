@@ -160,16 +160,12 @@ export const dbService = {
 /**
  * Fetches historical restock/purchase entries with their line items.
  * Accepts optional parameters for shop filtering, date range, and row limits.
- */
-/**
- * Fetches historical restock/purchase entries with their line items.
- * Accepts optional parameters for shop filtering, date range, and row limits.
  * Returns a flattened array of PurchaseReceipt records.
  */
 async fetchPurchases(options?: {
   shopId?: string;
-  startDate?: string; // e.g. 'YYYY-MM-DD'
-  endDate?: string;   // e.g. 'YYYY-MM-DD'
+  startDate?: string;
+  endDate?: string;
   limit?: number;
 }): Promise<PurchaseReceipt[]> {
   const { shopId, startDate, endDate, limit = 100 } = options || {};
@@ -184,32 +180,27 @@ async fetchPurchases(options?: {
         quantity,
         unit_cost,
         total_cost,
+        unit_of_measurement,
         items (
           item_name
         )
       )
     `)
-    // Primary sort: newest purchase date first
-    // Secondary sort: newest timestamp/record first for same-day purchases
     .order("purchase_date", { ascending: false })
     .order("created_at", { ascending: false });
 
-  // Shop filter
   if (shopId && shopId !== 'all' && shopId !== 'undefined') {
     query = query.eq("shop_id", shopId);
   }
 
-  // Date range filters
   if (startDate) {
     query = query.gte("purchase_date", startDate);
   }
   if (endDate) {
-    // Append end-of-day timestamp if a plain YYYY-MM-DD date is provided
     const formattedEndDate = endDate.includes("T") ? endDate : `${endDate}T23:59:59`;
     query = query.lte("purchase_date", formattedEndDate);
   }
 
-  // Limit parent purchase records (100 receipts by default)
   if (limit) {
     query = query.limit(limit);
   }
@@ -217,14 +208,12 @@ async fetchPurchases(options?: {
   const { data, error } = await query;
   if (error) throw error;
 
-  // Helper to strip time from timestamps
   const cleanDate = (dateVal: any): string => {
     if (!dateVal) return '';
     const str = String(dateVal).trim();
     return str.split('T')[0].split(' ')[0];
   };
 
-  // Flatten nested relational data into PurchaseReceipt UI format
   const flattenedRecords: PurchaseReceipt[] = [];
 
   (data || []).forEach((purchase: any) => {
@@ -235,8 +224,10 @@ async fetchPurchases(options?: {
       vat_amount: Number(purchase.vat_amount || 0),
       withholding_amount: Number(purchase.withholding_amount || 0),
       total_amount: Number(purchase.total_amount || 0),
-      is_vat_applied: Boolean(purchase.is_vat_applied),
-      is_withholding_applied: Boolean(purchase.is_withholding_applied),
+      is_vat_applied: Boolean(purchase.is_vat_applied || Number(purchase.vat_amount) > 0),
+      is_withholding_applied: Boolean(purchase.is_withholding_applied || Number(purchase.withholding_amount) > 0),
+      invoice_ref: purchase.invoice_ref || null,
+      payment_status: (purchase.payment_status || 'paid') as 'paid' | 'credit' | 'partial',
     };
 
     if (purchase.purchase_items && purchase.purchase_items.length > 0) {
@@ -250,7 +241,8 @@ async fetchPurchases(options?: {
           total_cost: Number(itemLine.total_cost || 0),
           purchase_date: formattedDate,
           shop_id: purchase.shop_id,
-          supplier_name: purchase.vendor_name || null,
+          unit_of_measurement: itemLine.unit_of_measurement || 'Pcs',
+          supplier_name: purchase.vendor_name || purchase.supplier_name || null,
           recorded_by: purchase.recorded_by || null,
           created_at: purchase.created_at,
           ...taxHeaderData
@@ -266,7 +258,8 @@ async fetchPurchases(options?: {
         total_cost: Number(purchase.total_amount || 0),
         purchase_date: formattedDate,
         shop_id: purchase.shop_id,
-        supplier_name: purchase.vendor_name || null,
+        unit_of_measurement: 'Pcs',
+        supplier_name: purchase.vendor_name || purchase.supplier_name || null,
         recorded_by: purchase.recorded_by || null,
         created_at: purchase.created_at,
         ...taxHeaderData
@@ -276,6 +269,7 @@ async fetchPurchases(options?: {
 
   return flattenedRecords;
 },
+
  /**
    * Records a complete multi-line restock transaction with tax metadata:
    * 1. Inserts parent header into `purchases`
