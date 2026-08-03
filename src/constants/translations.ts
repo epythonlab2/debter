@@ -353,7 +353,55 @@ export const translations = {
   printLabel: "Print",
   noFilteredReceipts: "No receipts found matching your criteria.",
   noReceiptsYet: "No purchase receipts recorded yet.",
+
+  // Modal Header & Titles
+  recordPurchase: 'Record Stock Restock',
+  vendorName: 'Supplier / Vendor Name',
+  vendorNamePlaceholder: 'e.g. Wholesale Distributor, Direct Import',
   
+  // Item Selection & Dropdown
+  selectOrSearchItem: '-- Select or Search Item --',
+  searchItemPlaceholder: 'Search item...',
+  noItemsMatch: 'No items match "{searchTerm}"',
+  availableStock: 'Available',
+  restockItems: 'Restock Line Items',
+  addAnotherItem: 'Add Another Item',
+  qtyPlaceholder: 'Qty',
+  unitCostPlaceholder: 'Unit Cost',
+
+  // Tax Section
+  taxesAndDeductions: 'Taxes & Deductions',
+  includeVat: 'Include VAT',
+  deductWithholding: 'Deduct Withholding (WT)',
+
+  // Financial Summary
+  withholdingTaxLabel: 'Withholding Tax',
+  netPayableAmount: 'Net Payable Amount',
+  currencyEtb: 'ETB',
+
+  // Actions & Buttons
+  cancel: 'Cancel',
+  savePurchase: 'Save Purchase',
+  saving: 'Saving...',
+
+  // Error Messages & Defaults
+  failedToRecordPurchase: 'Failed to record purchase. Please try again.',
+  directRestock: 'Direct Restock',
+  invalidLineError: "Please complete all required item fields marked in red.",
+  invalidCost: "Invalid Cost",
+  invalidQty: "Invalid Quantity",
+  requiredUom: "Required Unit",
+  requiredItem: "Required Item",
+  // Units of Measurement
+  uomPcs: 'Pcs',
+  uomKg: 'Kg',
+  uomBox: 'Box',
+  uomLitre: 'Litre',
+  uomMeter: 'Meter',
+  uomPack: 'Pack',
+  uomCarton: 'Carton',  
+  selectUom:  'Select Unit of Measurement',
+
 
   },
   
@@ -709,6 +757,56 @@ export const translations = {
   printLabel: "አትም",
   noFilteredReceipts: "ምንም የተገኘ ደረሰኝ የለም",
   noReceiptsYet: "ምንም የተመዘገበ ደረሰኝ የለም",
+
+  recordPurchase: 'የዕቃ ግዢ መዝግብ',
+  vendorName: 'የአቅራቢው / የሻጩ ስም',
+  vendorNamePlaceholder: 'ምሳሌ፡ የጅምላ አከፋፋይ፣ ቀጥታ አስመጪ',
+  
+  // Item Selection & Dropdown
+  selectOrSearchItem: '-- ዕቃ ይምረጡ ወይም ይፈልጉ --',
+  searchItemPlaceholder: 'ዕቃ ፈልግ...',
+  noItemsMatch: 'ከ"{searchTerm}" ጋር የሚመሳሰል ዕቃ አልተገኘም',
+  availableStock: 'በክምችት ላይ ያለ',
+  restockItems: 'የሚገዙ ዕቃዎች ዝርዝር',
+  addAnotherItem: 'ሌላ ዕቃ ጨምር',
+  qtyPlaceholder: 'ብዛት',
+  unitCostPlaceholder: 'የአንዱ ዋጋ',
+
+  // Tax Section
+  taxesAndDeductions: 'ታክስ እና ተቀናሾች',
+  includeVat: 'ተጨማሪ እሴት ታክስ (VAT) አካትት',
+  deductWithholding: 'ዊዝሆልዲንግ ታክስ (WT) ቀንስ',
+
+  // Financial Summary
+
+  withholdingTaxLabel: 'ዊዝሆልዲንግ ታክስ',
+  netPayableAmount: 'የሚከፈለው የተጣራ መጠን',
+  currencyEtb: 'ብር',
+
+  // Actions & Buttons
+  cancel: 'ሰርዝ',
+  savePurchase: 'ግዢውን መዝግብ',
+  saving: 'በመመዝገብ ላይ...',
+
+  // Error Messages & Defaults
+  invalidLineError: "እባክዎ ከታች በቀይ የተመለከቱትን በትክክል ይሙሉ።",
+  failedToRecordPurchase: 'ግዢውን መመዝገብ አልተቻለም። እባክዎን እንደገና ይሞክሩ።',
+  directRestock: 'ቀጥታ የግዢ ገቢ',
+  noLineItemsLogged: "የእቃ ዝርዝር ሳይካተት የእቃ መሙላት ማጠቃለያ ተመዝግቧል::",
+  requiredItem: "የእቃውን ስም ይምረጡ።",
+  requiredUom: "መለኪያ ይምረጡ።",
+  invalidQty: "ብዛት ያስገቡ።",
+  invalidCost: "የአንዱ ዋጋ ያስገቡ።",
+  
+  // Units of Measurement
+  uomPcs: 'በቁጥር',
+  uomKg: 'ኪ.ግ',
+  uomBox: 'ሣጥን',
+  uomLitre: 'ሊትር',
+  uomMeter: 'ሜትር',
+  uomPack: 'ጥቅል',
+  uomCarton: 'ካርቶን',
+  selectUom: '-- የመለኪያ አማራጭ ይምረጡ --',
 
   }
 };

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Plus, Receipt, Truck, AlertCircle, Loader2 } from 'lucide-react';
 
 // Modals & Common Components
-import { RecordPurchaseModal } from '../modals/RecordPurchaseModal';
+import { RecordPurchaseModal } from './RecordPurchaseModal';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 import { Pagination } from '../common/Pagination';
 
