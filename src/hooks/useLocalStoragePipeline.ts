@@ -1,9 +1,9 @@
-// /hooks/useLocalStragePipeline
+// /hooks/useLocalStoragePipeline.ts
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { dbService } from '../core/services/dbService';
 import { UserProfile, Shop, Sale, DubeRecord, ToastState, PurchaseRecord } from '../types';
-import { ItemRecord } from '../types/inventory';
+import { ItemRecord, UnitOfMeasure } from '../types/inventory';
 import { 
   INITIAL_SHOPS, 
   INITIAL_USERS, 
@@ -153,7 +153,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         ? (targetFilter === 'all' ? undefined : targetFilter) 
         : (userSession.shop_id || undefined);
 
-      // 🟢 FETCH PURCHASES UNCONDITIONALLY WITH SHOPSCOPE (ALLOWS UNDEFINED FOR ALL SHOPS)
       const [cloudShops, cloudItems, cloudSales, cloudDube, cloudPurchases] = await Promise.all([
         dbService.fetchShops(),
         dbService.fetchItems(shopScope),
@@ -185,7 +184,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         localStorage.setItem('debter_v1_dube', JSON.stringify(cloudDube));
       }
 
-      // 🟢 PERSIST PURCHASES TO STATE & LOCAL STORAGE
       if (cloudPurchases) {
         setPurchases(cloudPurchases);
         localStorage.setItem('debter_v1_purchases', JSON.stringify(cloudPurchases));
@@ -293,7 +291,6 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       if (localDube) setDubeRecords(JSON.parse(localDube));
       else setDubeRecords(INITIAL_DUBE_RECORDS);
 
-      // 🟢 HYDRATE PURCHASES WITH FALLBACK TO EMPTY ARRAY
       if (localPurchases) setPurchases(JSON.parse(localPurchases));
       else setPurchases([]);
 
@@ -418,7 +415,9 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
         item_name: finalItemName,
         default_price: Number(salePrice) || 0,
         shop_id: currentUser.shop_id || '',
-        quantity: Number(saleQty || 1)
+        quantity: Number(saleQty || 1),
+        unit: 'pcs',
+        min_stock_level: 5,
       };
       setItems(prev => [newLocalProduct, ...prev]);
     } else {
@@ -490,7 +489,9 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
           item_name: finalItemName,
           default_price: Number(salePrice) || 0,
           shop_id: currentUser.shop_id || '',
-          quantity: 100 
+          quantity: 100,
+          unit: 'pcs',
+          min_stock_level: 5,
         });
       }
 
@@ -511,28 +512,44 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
     }
   };
 
+  /** Corrected Item Registration Handler */
   const handleRegisterItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser?.shop_id) return;
+    if (!currentUser?.shop_id) {
+      triggerToast(lang === 'en' ? "No shop selected or assigned!" : "ሱቅ አልተመረጠም!", "error");
+      return;
+    }
+
+    const trimmedName = itemName.trim();
+    if (!trimmedName) {
+      triggerToast(lang === 'en' ? "Item name is required" : "የዕቃው ስም ያስፈልጋል", "error");
+      return;
+    }
 
     const parsedQuantity = parseInt(itemQuantity, 10);
-    const finalQuantity = isNaN(parsedQuantity) || parsedQuantity <= 0 ? 1 : parsedQuantity;
+    const finalQuantity = isNaN(parsedQuantity) || parsedQuantity < 0 ? 0 : parsedQuantity;
+    const parsedPrice = parseFloat(newInvPrice);
+    const finalPrice = isNaN(parsedPrice) || parsedPrice < 0 ? 0 : parsedPrice;
 
     try {
       if (modalMode === 'edit' && selectedItemId) {
         await dbService.updateItem(selectedItemId, {
-          item_name: itemName.trim(),
-          default_price: Number(newInvPrice),
-          quantity: finalQuantity
+          item_name: trimmedName,
+          default_price: finalPrice,
+          quantity: finalQuantity,
+          unit: 'pcs',
+          min_stock_level: 5
         });
         triggerToast(lang === 'en' ? "Item updated!" : "ዕቃው ተስተካክሏል!", "success");
       } else {
         await dbService.createItem({
           id: crypto.randomUUID(),
-          item_name: itemName.trim(),
-          default_price: Number(newInvPrice),
+          item_name: trimmedName,
+          default_price: finalPrice,
           shop_id: currentUser.shop_id,
-          quantity: finalQuantity 
+          quantity: finalQuantity,
+          unit: 'pcs',
+          min_stock_level: 5
         });
         triggerToast(lang === 'en' ? "Item added!" : "ዕቃው ገብቷል!", "success");
       }
@@ -544,7 +561,7 @@ export function useLocalStoragePipeline(initialLang: string = 'en', t: any = {})
       setIsModalOpen(false);
       await syncCloudDatabases(currentUser);
     } catch (err: any) {
-      triggerToast(err.message, "error");
+      triggerToast(err.message || "Operation failed", "error");
     }
   };
 

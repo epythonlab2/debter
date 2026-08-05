@@ -2,6 +2,7 @@
 import { supabase } from "../../utils/supabaseClient";
 import { UserProfile, Shop, Item, Sale, DubeRecord, PurchaseRecord } from "../../types";
 import { InsertSalePayload, InsertPurchasePayload, PurchaseReceipt } from "../../types/payLoad";
+import { ItemRecord, UnitOfMeasure } from "../../types/inventory";
 
 // Explicit Types & Payloads
 export interface GlobalBroadcastPayload {
@@ -65,93 +66,125 @@ export const dbService = {
   },
 
   // =========================================================================
-  // --- RETRIEVAL & MUTATION SERVICES: ITEMS / INVENTORY ---
-  // =========================================================================
+// --- RETRIEVAL & MUTATION SERVICES: ITEMS / INVENTORY ---
+// =========================================================================
 
-  async fetchItems(shopId?: string): Promise<Item[]> {
-    let query = supabase
-      .from("items")
-      .select("*")
-      .order('updated_at', { ascending: false })
-      .order('created_at', { ascending: false });
-      
-    if (shopId && shopId !== 'all' && shopId !== 'undefined') {
-      query = query.eq("shop_id", shopId);
-    }
+async fetchItems(shopId?: string): Promise<ItemRecord[]> {
+  let query = supabase
+    .from("items")
+    .select("*")
+    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false });
     
-    const { data, error } = await query;
-    if (error) throw error;
-
-    return (data || []).map(i => ({
-      id: i.id,
-      item_name: i.item_name,
-      itemName: i.item_name,
-      default_price: Number(i.default_price || 0),
-      shop_id: i.shop_id,
-      quantity: Number(i.quantity || 0) 
-    }));
-  },
-
-  async createItem(
-    item: Omit<Item, 'id' | 'quantity' | 'shop_id'> & { 
-      id?: string; 
-      quantity?: number; 
-      itemName?: string;
-      shop_id?: string | null;
-    }
-  ): Promise<Item> {
-    const targetId = item.id || crypto.randomUUID();
-    const resolvedName = item.item_name || item.itemName || "Unnamed SKU";
-    const resolvedPrice = Number(item.default_price || 0);
-
-    const { error } = await supabase
-      .from("items")
-      .insert([{
-        id: targetId,
-        item_name: resolvedName, 
-        default_price: resolvedPrice,
-        shop_id: item.shop_id || null,
-        quantity: Number(item.quantity || 0)
-      }]);
-
-    if (error) throw error;
-    
-    return {
-      id: targetId,
-      item_name: resolvedName,
-      default_price: resolvedPrice,
-      shop_id: item.shop_id || "", 
-      quantity: Number(item.quantity || 0)
-    };
-  },
+  if (shopId && shopId !== 'all' && shopId !== 'undefined') {
+    query = query.eq("shop_id", shopId);
+  }
   
-  async updateItem(id: string, updates: { item_name: string; default_price: number; quantity: number }): Promise<void> {
-    const { error } = await supabase
-      .from("items")
-      .update({
-        item_name: updates.item_name,
-        default_price: Number(updates.default_price),
-        quantity: Number(updates.quantity),
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", id);
+  const { data, error } = await query;
+  if (error) throw error;
 
-    if (error) throw error;
-  },
+  return (data || []).map(i => ({
+    id: i.id,
+    item_name: i.item_name,
+    itemName: i.item_name,
+    default_price: Number(i.default_price || 0),
+    cost_price: Number(i.cost_price || 0),
+    unit: i.unit || 'Pcs',
+    min_stock_level: Number(i.min_stock_level ?? 5),
+    shop_id: i.shop_id,
+    quantity: Number(i.quantity || 0) 
+  }));
+},
 
-  async deleteItem(id: string): Promise<void> {
-    const { error } = await supabase.from("items").delete().eq("id", id);
-    if (error) throw error;
-  },
+async createItem(
+  item: Omit<Item, 'id' | 'quantity' | 'shop_id'> & { 
+    id?: string; 
+    quantity?: number; 
+    itemName?: string;
+    cost_price?: number;
+    unit?: string;
+    min_stock_level?: number;
+    shop_id?: string | null;
+  }
+): Promise<ItemRecord> {
+  const targetId = item.id || crypto.randomUUID();
+  const resolvedName = item.item_name || item.itemName || "Unnamed SKU";
+  const resolvedPrice = Number(item.default_price || 0);
+  const resolvedCost = Number(item.cost_price || 0);
+  const resolvedQty = Number(item.quantity || 0);
+  const resolvedUnit = item.unit || 'Pcs';
+  const resolvedMinStock = Number(item.min_stock_level ?? 5);
 
-  async updateItemQuantity(itemId: string, newQty: number): Promise<void> {
-    const { error } = await supabase
-      .from('items')
-      .update({ quantity: newQty, updated_at: new Date().toISOString() })
-      .eq('id', itemId);
+  const { error } = await supabase
+    .from("items")
+    .insert([{
+      id: targetId,
+      item_name: resolvedName, 
+      default_price: resolvedPrice,
+      cost_price: resolvedCost,
+      unit: resolvedUnit,
+      min_stock_level: resolvedMinStock,
+      shop_id: item.shop_id || null,
+      quantity: resolvedQty
+    }]);
 
-    if (error) throw error;
-  },
+  if (error) throw error;
+  
+  return {
+    id: targetId,
+    item_name: resolvedName,
+    default_price: resolvedPrice,
+    cost_price: resolvedCost,
+    unit: resolvedUnit,
+    min_stock_level: resolvedMinStock,
+    shop_id: item.shop_id || "", 
+    quantity: resolvedQty
+  };
+},
+
+async updateItem(
+  id: string, 
+  updates: { 
+    item_name: string; 
+    default_price: number; 
+    quantity: number;
+    cost_price?: number;
+    unit?: string;
+    min_stock_level?: number;
+  }
+): Promise<void> {
+  const payload: Record<string, any> = {
+    item_name: updates.item_name,
+    default_price: Number(updates.default_price),
+    quantity: Number(updates.quantity),
+    updated_at: new Date().toISOString()
+  };
+
+  if (updates.cost_price !== undefined) payload.cost_price = Number(updates.cost_price);
+  if (updates.unit !== undefined) payload.unit = updates.unit;
+  if (updates.min_stock_level !== undefined) payload.min_stock_level = Number(updates.min_stock_level);
+
+  const { error } = await supabase
+    .from("items")
+    .update(payload)
+    .eq("id", id);
+
+  if (error) throw error;
+},
+
+async deleteItem(id: string): Promise<void> {
+  const { error } = await supabase.from("items").delete().eq("id", id);
+  if (error) throw error;
+},
+
+async updateItemQuantity(itemId: string, newQty: number): Promise<void> {
+  const { error } = await supabase
+    .from('items')
+    .update({ quantity: newQty, updated_at: new Date().toISOString() })
+    .eq('id', itemId);
+
+  if (error) throw error;
+},
 
   // =========================================================================
   // --- RETRIEVAL & MUTATION SERVICES: PURCHASES / INVENTORY RESTOCK ---

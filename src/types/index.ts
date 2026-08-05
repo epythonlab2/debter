@@ -19,13 +19,15 @@ export interface Shop {
   location: string;
   ownerId: string | null;
 }
-
 export interface Item {
   id: string;
   item_name: string;
-  quantity: number; // Cleaned up comma typo to semicolon
   default_price: number;
-  shop_id: string;
+  quantity: number;
+  shop_id?: string | null;
+  cost_price?: number; 
+  unit?: string;    
+  min_stock_level?: number; 
 }
 
 export interface Sale {

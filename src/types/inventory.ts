@@ -1,103 +1,104 @@
 // src/types/inventory.ts
 
 /**
+ * Supported units of measurement for retail and wholesale products
+ */
+export type UnitOfMeasure = 'Pcs' | 'Kg' | 'Litre' |'Meter' | 'Box' | 'Pack' | 'Carton' | string;
+
+/**
  * ============================================================================
  * INTERFACE: ItemRecord
  * ============================================================================
- * Represents the fundamental data schema for an inventory item/SKU record 
- * stored within local reactive states and the remote database system.
+ * Core data schema for an inventory item/SKU record.
  */
 export interface ItemRecord {
-  /** Unique structural identification key (typically UUIDv4 generated) */
+  /** Unique primary key (UUIDv4) */
   id: string;
   
-  /** Descriptive runtime label name of the inventory item */
+  /** Foreign key mapping to shop/store */
+  shop_id?: string;
+  
+  /** Stock keeping unit or barcode */
+  code?: string;
+  
+  /** Item description name */
   item_name: string;
   
-  /** The standard base pricing value calculated in local currency */
+  /** Standard retail selling price in local currency (ETB) */
   default_price: number;
+
+  /** Cost price / wholesale buying price for margin calculation */
+  cost_price?: number;
   
-  /** Current physical stock capacity sitting in shop bounds (defaults to 0 if omitted) */
+  /** Current available physical stock count */
   quantity?: number;
   
-  /** Foreign key pointing to the managing retail location/shop assignment */
-  shop_id?: string;
+  /** Minimum inventory threshold before triggering a Low Stock alert */
+  min_stock_level?: number;
+  
+  /** Base unit of measurement (e.g., 'pcs', 'kg') */
+  unit?: UnitOfMeasure;
+
+  /** Timestamps for audit trails */
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**
  * ============================================================================
  * INTERFACE: InventoryTranslation
  * ============================================================================
- * Outlines the strict internationalization (i18n) localization key map
- * required to swap language packages dynamically across the UI text nodes.
+ * Internationalization (i18n) key map for the inventory system.
  */
 export interface InventoryTranslation {
-  /** Action title trigger to add a product record (e.g., "Add Inventory Item") */
   addInventoryItem: string;
-  
-  /** Optional view context label modifier when transforming form layouts to edit modes */
   modifyItem?: string; 
-  
-  /** Form text descriptor for descriptive naming inputs */
   itemName: string;
-  
-  /** Interactive placeholder prompt displayed inside empty text bounds */
   itemNamePlaceholder?: string;
-  
-  /** Explicit currency label definition tracking price records (e.g., "Price (ETB)") */
   priceEtb: string;
-  
-  /** Form row indicator mapping physical numerical availability counts */
+  unitCostEtb?: string;
   quantity: string;
-  
-  /** Action execution title for fresh element submission buttons */
+  currentStock?: string;
+  initialQuantity?: string;
   registerItem: string;
-  
-  /** Optional completion prompt label for modification forms */
   saveChange?: string;       
-  
-  /** Placeholder hint text binding inside the inventory query search text inputs */
   searchInventory: string;
-  
-  /** Fallback layout prompt rendered when filtering returns an empty matrix array */
   noSalesGeneric: string;
-  
-  /** Column header title text marking available capacities */
+  noInventoryFound?: string;
   stock: string;
-  
-  /** Local units-of-measure signifier text trailing numerical outputs (e.g., "pcs") */
+  unit?: string;
+  status?: string;
   pcs: string;
-  
-  /** Local currency operational shorthand designation (e.g., "ETB") */
+  kg?: string;
+  ltr?: string;
+  box?: string;
+  ctn?: string;
+  pack?: string;
   currency: string;
-  
-  /** Optional empty stock warning element flag string (e.g., "Out of Stock") */
   outOfStock?: string;
-  
-  /** Optional header title mapping layout modification/deletion controls */
+  lowStock?: string;
+  inStock?: string;
+  minStockAlert?: string;
   actions?: string;            
-
-  /** Form row limit pagination options */
   rows?: string;
-
-  /** Form collision state notifications handles */
   alreadyExist?: string;
   addExistingStock?: string;
   mergeUpdate?: string;
   edit?: string;
   deleteBtn?: string;
   cancelBtn?: string;
+  itemNameRequired?: string;
+  invalidPrice?: string;
+  errorGeneric?: string;
 }
 
 /**
  * ============================================================================
  * INTERFACE: InventoryTabProps
  * ============================================================================
- * Contract declaring type expectations for properties transferred directly
- * downstream into primary UI presentation modules from orchestrating custom hooks.
  */
 export interface InventoryTabProps {
-  /* --- Local Input Content Bindings --- */
+  /* --- Local Form Bindings --- */
   itemName: string;
   setItemName: (val: string) => void;
   newInvPrice: string;
@@ -105,70 +106,30 @@ export interface InventoryTabProps {
   itemQuantity: string;
   setItemQuantity: (val: string) => void;
   
-  /* --- Live Query Control Bindings --- */
+  /* --- Search & Filtering --- */
   inventorySearch: string;
   setInventorySearch: (val: string) => void;
   
-  /* --- Core Operation Callbacks --- */
-  /** Event wrapper logic managing database insertions, structural mutations, or updates */
+  /* --- Core Actions & Mutations --- */
   handleRegisterItem: (e: React.FormEvent, id: string | null) => Promise<void> | void;
-  /** Action handler targeting resource components for eviction confirmation cycles */
   triggerDeleteConfirm: (type: 'item' | 'shop' | 'sale', id: string) => void;
   
-  /* --- Presentation State Values --- */
-  /** Compute-limited array matrix sliced directly down to matching workspace records */
+  /* --- Data Sets --- */
   scopedItems: ItemRecord[];
-  /** Active localized dictionary instance mapping matching language translation strings */
+  items: ItemRecord[];
   t: InventoryTranslation;
   
-  /* --- View Management & Modal Control Switches --- */
-  /** Condition evaluating if the input action modal workspace should reveal itself */
+  /* --- Modal & View States --- */
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
-  
-  /** Mode profile routing modal presentation interfaces to execute writes or modifications */
   modalMode: 'create' | 'edit';
   setModalMode: (mode: 'create' | 'edit') => void;
-  
-  /** Active database identifier key targeting the record being processed inside mutations */
   selectedItemId: string | null; 
   setSelectedItemId: (id: string | null) => void;
 
-  /* --- Pagination Parameters --- */
+  /* --- Pagination --- */
   pageSize: number;
   setPageSize: (size: number) => void;
-  items: ItemRecord[];
-}
-
-/**
- * ============================================================================
- * HOOK CONFIGURATION PROPS: UseInventoryProps
- * ============================================================================
- */
-export interface UseInventoryProps {
-  /** The currently logged-in user profile domain record */
-  currentUser: any;
-
-  /** Local state cached list of synchronized inventory database records */
-  items: ItemRecord[];
-
-  /** Upstream state-modifier function dispatched to update the main item array index */
-  setItems: React.Dispatch<React.SetStateAction<ItemRecord[]>>;
-
-  /** Active organizational store filtration key */
-  selectedShopFilter: string;
-
-  /** Refresh routine targeting background cluster synchronizations */
-  syncCloudDatabases: () => Promise<void>;
-
-  /** Layout notification trigger pipeline callback */
-  triggerToast: (message: string, type?: 'success' | 'error') => void;
-
-  /** Target runtime locale code framework tracking active translations */
-  lang: 'en' | 'am';
-
-  /** Dynamic generic localized text object layout mapping dictionary strings */
-  t: InventoryTranslation;
 }
 
 /**
@@ -183,6 +144,9 @@ export interface InputFieldProps {
   placeholder: string;
   type?: string;
   min?: string;
+  step?: string;
+  disabled?: boolean;
+  required?: boolean;
   inputMode?: 'text' | 'numeric' | 'decimal' | 'tel' | 'search' | 'email' | 'url';
 }
 
@@ -194,7 +158,11 @@ export interface InputFieldProps {
 export interface InventoryModalProps {
   onSubmit: (e: React.FormEvent) => void;
   mode: 'create' | 'edit';
-  values: { itemName: string; newInvPrice: string; itemQuantity: string };
+  values: { 
+    itemName: string; 
+    newInvPrice: string; 
+    itemQuantity: string;
+  };
   setters: {
     setItemName: (val: string) => void;
     setNewInvPrice: (val: string) => void;
@@ -203,6 +171,14 @@ export interface InventoryModalProps {
   globalItems: ItemRecord[];
   onClose: () => void;
   t: InventoryTranslation;
+  
+  /* Optional extended form handlers */
+  unit?: UnitOfMeasure;
+  setUnit?: (unit: UnitOfMeasure) => void;
+  unitCost?: string;
+  setUnitCost?: (cost: string) => void;
+  minStockLevel?: string;
+  setMinStockLevel?: (min: string) => void;
 }
 
 /**
@@ -215,6 +191,10 @@ export interface InventoryListProps {
   onEdit: (item: ItemRecord) => void;
   onDelete: (type: 'item' | 'shop' | 'sale', id: string) => void;
   t: InventoryTranslation;
+  pageSize: number;
+  selectedIds?: string[];
+  onSelectToggle?: (id: string) => void;
+  onSelectAll?: (ids: string[]) => void;
 }
 
 /**
@@ -226,5 +206,23 @@ export interface InventoryRowProps {
   item: ItemRecord;
   onEdit: (item: ItemRecord) => void;
   onDelete: (type: 'item' | 'shop' | 'sale', id: string) => void;
+  t: InventoryTranslation;
+  isSelected?: boolean;
+  onSelectToggle?: (id: string) => void;
+}
+
+/**
+ * ============================================================================
+ * HOOK CONFIGURATION PROPS: UseInventoryProps
+ * ============================================================================
+ */
+export interface UseInventoryProps {
+  currentUser: any;
+  items: ItemRecord[];
+  setItems: React.Dispatch<React.SetStateAction<ItemRecord[]>>;
+  selectedShopFilter: string;
+  syncCloudDatabases: () => Promise<void>;
+  triggerToast: (message: string, type?: 'success' | 'error') => void;
+  lang: 'en' | 'am';
   t: InventoryTranslation;
 }
